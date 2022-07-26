@@ -14,7 +14,7 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # ZSH plugins
-plugins=(git)
+plugins=(git asdf)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -25,17 +25,17 @@ source $ZSH/oh-my-zsh.sh
 alias q='exit'
 alias c='clear'
 alias cp='cp -v'
-alias rm='rm -I'
 alias mv='mv -iv'
-alias ln='ln -sriv'
+alias ln='ln -siv'
 
 ### Colorize commands
-alias ls='exa'
+command -v exa > /dev/null && \
+	alias ls='exa'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 alias diff='diff --color=auto'
-alias ip='ip --color=auto'=
+alias ip='ip --color=auto'
 
 ### LS & TREE
 TREE_IGNORE="cache|log|logs|node_modules|vendor"
@@ -48,7 +48,7 @@ alias lt2='ls --tree -L 2 -I ${TREE_IGNORE}'
 
 # TOP
 
-alias top='gtop'
+alias top='btop'
 
 # --------------------------------- SETTINGS ----------------------------------
 
@@ -102,8 +102,24 @@ esac
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-### NVM
+### direnv
+eval "$(direnv hook bash)"
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+### Auto-load Python Virtualsdfasdf
+python_venv() {
+  MY_VENV=./venv
+  if [[ -z "$VIRTUAL_ENV" ]]; then
+    if [[ -d $MY_VENV ]]; then
+      source ${MY_VENV}/bin/activate
+    fi
+  else
+    parentdir="$(dirname "$VIRTUAL_ENV")"
+    if [[ "$PWD"/ != ${parentdir}/* ]]; then
+      deactivate
+    fi
+  fi
+}
+
+autoload -U add-zsh-hook
+add-zsh-hook chpwd python_venv
+python_venv

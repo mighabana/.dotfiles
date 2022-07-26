@@ -15,7 +15,8 @@ alias mv='mv -iv'
 alias ln='ln -sriv'
 
 ### Colorize commands
-alias ls='exa'
+command -v exa > /dev/null && \
+	alias ls='exa'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
