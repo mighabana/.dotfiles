@@ -77,3 +77,4 @@ xterm*|rxvt*|Eterm|aterm|kterm|gnome*|alacritty)
 	PS1="\[\e]0;\u@\h: \w\a\]$PS1"
 	;;
 esac
+export PATH="$PATH:/opt/mssql-tools/bin"

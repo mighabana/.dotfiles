@@ -2,7 +2,7 @@
 	name = Miguel Habana
 	email = mighabana@gmail.com
 [core]
-	editor = code
+	editor = code -w
 [init]
 	defaultBranch = main
 [alias]

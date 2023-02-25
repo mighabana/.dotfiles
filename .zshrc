@@ -14,9 +14,10 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # ZSH plugins
-plugins=(git asdf)
+plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
+. $HOME/.asdf/asdf.sh
 
 # User configuration
 
@@ -103,7 +104,7 @@ esac
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 ### direnv
-eval "$(direnv hook bash)"
+eval "$(direnv hook zsh)"
 
 ### Auto-load Python Virtualsdfasdf
 python_venv() {
