@@ -14,7 +14,7 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # ZSH plugins
-plugins=(git)
+plugins=(git zsh-autosuggestions)
 
 source $ZSH/oh-my-zsh.sh
 . $HOME/.asdf/asdf.sh
@@ -106,7 +106,7 @@ esac
 ### direnv
 eval "$(direnv hook zsh)"
 
-### Auto-load Python Virtualsdfasdf
+### Auto-load Python Virtual Environment
 python_venv() {
   MY_VENV=./venv
   if [[ -z "$VIRTUAL_ENV" ]]; then
@@ -124,3 +124,6 @@ python_venv() {
 autoload -U add-zsh-hook
 add-zsh-hook chpwd python_venv
 python_venv
+
+export PATH="/opt/homebrew/opt/curl/bin:$PATH"
+export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
