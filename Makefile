@@ -1,16 +1,16 @@
 OS := $(shell uname)
 
 deps:
-	@if [ $(OS) = "Linux" ]; then \
+	@if [ $(OS) = "Linux" ]; then\
 			command -v exa > /dev/null && \
 			command -v btop > /dev/null && \
 			command -v git > /dev/null && \
 			command -v zsh > /dev/null && \
 			[-d ~/.oh-my-zsh ] && \
 			[ -d ~/.oh-my-zsh/custom/themes/powerlevel10k/ ] \
-	else \
+	elif [ $(OS) = "Darwin" ]; then\
 			echo "$(OS): Missing dependencies"; \
-			exit 1; \
+			exit 1
 	fi
 
 build:
@@ -23,7 +23,7 @@ build:
 	fi
 
 install:
-	@if [ $(OS) = "Linux"]; then \
+	@if [ $(OS) = "Linux" ]; then \
 
 		sudo apt install exa direnv tilda git zsh build-essential; \
 		sudo snap install btop; \
