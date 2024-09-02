@@ -1,8 +1,5 @@
-[user]
-	name = Miguel Habana
-	email = mighabana@gmail.com
 [core]
-	editor = code -w
+	editor = hx
 [init]
 	defaultBranch = main
 [alias]
@@ -15,3 +12,15 @@
 	lg = !"git lg1"
 [url "git@github.com:"]
 	insteadof = https://github.com
+
+[includeIf "gitdir:~/dev/personal/"]
+	path = ~/.gitconfig.personal
+
+[includeIf "gitdir:~/dev/work/fgi/"]
+	path = ~/.gitconfig.fgi
+	
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

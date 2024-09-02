@@ -1,0 +1,6 @@
+[user]
+name = Migs Habana
+email = miguel.habana@focusglobalinc.com
+
+[core]
+sshCommand = "ssh -i ~/.ssh/fgi-github -F /dev/null"
