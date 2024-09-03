@@ -30,8 +30,8 @@ alias mv='mv -iv'
 alias ln='ln -siv'
 
 ### Colorize commands
-command -v exa > /dev/null && \
-	alias ls='exa'
+command -v eza > /dev/null && \
+	alias ls='eza'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
