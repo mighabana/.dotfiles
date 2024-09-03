@@ -48,10 +48,6 @@ asdf plugin-add rust https://github.com/asdf-community/asdf-rust.git
 asdf install rust 1.80.0
 asdf global rust 1.80.0
 
-# install helix shell
-git clone https://github.com/helix-editor/helix ~/helix
-(cd ~/helix ; cargo install --path helix-term --locked)
-
 ### setup helix language servers
 pip install "python-lsp-server[all]"
 npm install -g typescript-language-server
@@ -68,5 +64,7 @@ ln -siv $PWD/.gitconfig ${HOME}
 ln -siv $PWD/.gitconfig.personal ${HOME}
 ln -siv $PWD/.gitconfig.fgi ${HOME}
 ln -siv $PWD/.p10k.zsh ${HOME}
+
 ln -siv $PWD/helix/config.toml ${HOME}/.config/helix/
+mkdir ${HOME}/.config/helix/themes/
 ln -siv $PWD/helix/themes/night_owl.toml ${HOME}/.config/helix/themes/
