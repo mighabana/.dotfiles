@@ -29,24 +29,24 @@ git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.12.0
 
 ### configure asdf packages and global versions
 asdf plugin-add python
-asdf install python 3.10.12
-asdf global python 3.10.12
+asdf install python 3.12.5
+asdf global python 3.12.5
 
 asdf plugin-add terraform https://github.com/asdf-community/asdf-hashicorp.git
-asdf install terraform 1.5.5
-asdf global terraform 1.5.5
+asdf install terraform 1.9.5
+asdf global terraform 1.9.5
 
 asdf plugin add gcloud https://github.com/jthegedus/asdf-gcloud
-asdf install gcloud 443.0.0
-asdf global gcloud 443.0.0
+asdf install gcloud 491.0.0
+asdf global gcloud 491.0.0
 
 asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
-asdf install nodejs 18.17.1
-asdf global nodejs 18.17.1
+asdf install nodejs v20.17.0
+asdf global nodejs v20.17.0
 
 asdf plugin-add rust https://github.com/asdf-community/asdf-rust.git
-asdf install rust 1.80.0
-asdf global rust 1.80.0
+asdf install rust 1.80.1
+asdf global rust 1.80.1
 
 ### setup helix language servers
 pip install "python-lsp-server[all]"
