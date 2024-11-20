@@ -81,11 +81,20 @@ setopt BEEP
 
 # ----------------------------------- MISC -----------------------------------
 
+# print envrc content like the env command
+envrc() {
+  if [[ -f ".envrc" ]]; then
+    cat .envrc
+  else
+    echo "no .envrc file"
+  fi
+}
+
 # Preferred editor for local and remote sessions
 if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='nano'
+  export EDITOR='vi'
 else
-  export EDITOR='code'
+  export EDITOR='hx'
 fi
 
 # colorize ls
@@ -109,9 +118,13 @@ eval "$(direnv hook zsh)"
 ### Auto-load Python Virtual Environment
 python_venv() {
   MY_VENV=./venv
+  ALT_VENV=./.venv
   if [[ -z "$VIRTUAL_ENV" ]]; then
     if [[ -d $MY_VENV ]]; then
       source ${MY_VENV}/bin/activate
+    fi
+    if [[ -d $ALT_VENV ]]; then
+      source ${ALT_VENV}/bin/activate
     fi
   else
     parentdir="$(dirname "$VIRTUAL_ENV")"
@@ -124,6 +137,11 @@ python_venv() {
 autoload -U add-zsh-hook
 add-zsh-hook chpwd python_venv
 python_venv
+
+# Wrapper function to always evaluate the python venv after running the command
+python () {
+  command python "$@" && python_venv
+}
 
 export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
