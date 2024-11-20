@@ -52,8 +52,10 @@ asdf global rust 1.80.1
 pip install "python-lsp-server[all]"
 npm install -g typescript-language-server
 
-# install terraform
-brew install hashicorp/tap/terraform-ls
+# install SOPS
+curl -LO https://github.com/getsops/sops/releases/download/v3.9.1/sops-v3.9.1.darwin.arm64
+sudo mv sops-v3.9.1.darwin.arm64 /usr/local/bin/sops
+sudo chmod +x /usr/local/bin/sops
 
 # ----------------------------------- CONFIGS -----------------------------------
 
