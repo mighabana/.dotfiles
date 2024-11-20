@@ -3,6 +3,7 @@ theme = "night_owl"
 [editor]
 auto-pairs = false
 line-number = "relative"
+mouse = false
 
 [editor.cursor-shape]
 insert = "bar"
@@ -33,6 +34,11 @@ C-l = "move_char_right" # move cursor right
 [keys.normal]
 C-s = ":w" # Save the current file
 C-q = ":q" # Close the current file
+C-j = "page_down"
+C-k = "page_up"
+C-l = "goto_line_end_newline"
+C-h = "goto_line_start"
+C-a = "select_all"
 
 # Move selected lines up/down
 A-j = ["extend_to_line_bounds", "delete_selection", "paste_after"]
