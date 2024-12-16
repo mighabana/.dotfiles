@@ -1,0 +1,21 @@
+# --- core utilities
+git              # Version control system
+build-essential  # Compiler and build tools (gcc, g++, make, etc.)
+curl             # Command-line tool for transferring data with URLs
+tilda            # Preferred terminal emulator
+
+# --- dev tools
+direnv           # Directory-based environment variable manager
+xclip            # Command-line clipboard utility
+
+# --- dev dependencies
+zlib1g-dev       # Development files for the zlib compression library
+libbz2-dev       # Development files for the bzip2 compression library
+libncurses5-dev  # Terminal handling (ncurses) development files
+libncursesw5-dev # Wide character version of ncurses development files
+libffi-dev       # Development files for Foreign Function Interface (FFI)
+libreadline-dev  # Development files for GNU readline and history libraries
+libssl-dev       # Development files for OpenSSL
+libsqlite3-dev   # SQLite3 development files
+liblzma-dev      # Development files for the XZ compression library
+tk-dev           # Development files for the Tk GUI toolkit
