@@ -1,4 +1,4 @@
-# oh-my-zsh configuration
+# --- oh-my-zsh configuration
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -14,10 +14,11 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # ZSH plugins
-plugins=(git zsh-autosuggestions)
+plugins=(git)
+[[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]] && plugins+=('zsh-autosuggestions')
 
 source $ZSH/oh-my-zsh.sh
-. $HOME/.asdf/asdf.sh
+[[ -f $HOME/.asdf/asdf.sh ]] && . $HOME/.asdf/asdf.sh
 
 # User configuration
 
@@ -25,13 +26,12 @@ source $ZSH/oh-my-zsh.sh
 
 alias q='exit'
 alias c='clear'
-alias cp='cp -v'
+alias cp='cp -iv'
 alias mv='mv -iv'
-alias ln='ln -siv'
+alias rm='rm -i'
 
 ### Colorize commands
-command -v eza > /dev/null && \
-	alias ls='eza'
+command -v eza &>/dev/null && alias ls='eza'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -39,17 +39,17 @@ alias diff='diff --color=auto'
 alias ip='ip --color=auto'
 
 ### LS & TREE
-TREE_IGNORE="cache|log|logs|node_modules|vendor"
+TREE_IGNORE=".cache .git logs node_modules"
 
 alias ll='ls -lGah'
 alias la='ls -a'
-alias lt='ls --tree -I ${TREE_IGNORE}'
-alias lt1='ls --tree -L 1 -I ${TREE_IGNORE}'
-alias lt2='ls --tree -L 2 -I ${TREE_IGNORE}'
+alias lt='ls --tree -I "${TREE_IGNORE}"'
+alias lt1='ls --tree -L 1 -I "${TREE_IGNORE}"'
+alias lt2='ls --tree -L 2 -I "${TREE_IGNORE}"'
 
 # TOP
 
-alias top='btop'
+command -v btop &>/dev/null && alias top='btop'
 
 # --------------------------------- SETTINGS ----------------------------------
 
@@ -64,16 +64,11 @@ setopt NO_NOMATCH
 setopt NUMERIC_GLOB_SORT
 
 ### History
-setopt HIST_FIND_NO_DUPS
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_SPACE
-setopt HIST_REDUCE_BLANKS
-setopt INC_APPEND_HISTORY
-
-HISTFILE=~/.zsh_history
+HISTFILE=${HOME}/.zsh_history
 HISTSIZE=5000
 SAVEHIST=5000
 
+setopt HIST_FIND_NO_DUPS HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS INC_APPEND_HISTORY
 
 ### Zle
 setopt BEEP
@@ -83,10 +78,10 @@ setopt BEEP
 
 # print envrc content like the env command
 envrc() {
-  if [[ -f ".envrc" ]]; then
+  if [[ -f ".envrc" && -r ".envrc" ]]; then
     cat .envrc
   else
-    echo "no .envrc file"
+    echo "no readable .envrc file found"
   fi
 }
 
@@ -100,13 +95,6 @@ fi
 # colorize ls
 [ -x /usr/bin/dircolors ] && eval "$(dircolors -b)"
 
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*|Eterm|aterm|kterm|gnome*|alacritty)
-	PS1="\[\e]0;\u@\h: \w\a\]$PS1"
-	;;
-esac
-
 ### POWERLEVEL
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -117,31 +105,25 @@ eval "$(direnv hook zsh)"
 
 ### Auto-load Python Virtual Environment
 python_venv() {
-  MY_VENV=./venv
-  ALT_VENV=./.venv
-  if [[ -z "$VIRTUAL_ENV" ]]; then
-    if [[ -d $MY_VENV ]]; then
-      source ${MY_VENV}/bin/activate
+    local venv_dirs=("./venv" "./.venv")
+    for dir in "${venv_dirs[@]}"; do
+        if [[ -z "$VIRTUAL_ENV" && -d $dir ]]; then
+            source "$dir/bin/activate"
+            return
+        fi
+    done
+    if [[ -n "$VIRTUAL_ENV" ]]; then
+        parentdir=$(dirname "$VIRTUAL_ENV")
+        if [[ "$PWD" != "$parentdir"/* ]]; then
+            deactivate
+        fi
     fi
-    if [[ -d $ALT_VENV ]]; then
-      source ${ALT_VENV}/bin/activate
-    fi
-  else
-    parentdir="$(dirname "$VIRTUAL_ENV")"
-    if [[ "$PWD"/ != ${parentdir}/* ]]; then
-      deactivate
-    fi
-  fi
 }
 
 autoload -U add-zsh-hook
 add-zsh-hook chpwd python_venv
 python_venv
 
-# Wrapper function to always evaluate the python venv after running the command
-python () {
-  command python "$@" && python_venv
-}
-
-export PATH="/opt/homebrew/opt/curl/bin:$PATH"
-export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
+[[ ":$PATH:" != *":/opt/homebrew/opt/curl/bin:"* ]] && export PATH="/opt/homebrew/opt/curl/bin:$PATH"
+[[ ":$PATH:" != *":/usr/local/opt/tcl-tk/bin:"* ]] && export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
+[[ ":$PATH:" != *":${HOME}/.cargo/bin:"* ]] && export PATH="${HOME}/.cargo/bin:$PATH"
