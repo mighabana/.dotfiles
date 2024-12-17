@@ -88,7 +88,9 @@ create_symlink() {
 
 # --- setup symlinks to config files
 
-mkdir ${HOME}/.config/helix/themes/
+if ! [[ -d ${HOME}/.config/helix/themes ]]; then
+    mkdir ${HOME}/.config/helix/themes
+fi
 
 create_symlink $PWD/.bashrc ${HOME}
 create_symlink $PWD/.zshrc ${HOME}
@@ -108,31 +110,103 @@ declare -A tools=(
     [gcloud]=503.0.0
     [nodejs]=v22.12.0
     [rust]=1.83.0
+    [postgres]=17.2
 )
 
+# Function to add and install asdf plugins/tools
+install_tool() {
+    local tool=$1
+    local version=$2
+
+    # Check if plugin exists
+    if asdf plugin-list | grep -q "^${tool}$"; then
+        log "Plugin '${tool}' already exists. Skipping plugin addition."
+    else
+        log "Adding plugin '${tool}'..."
+        asdf plugin-add "$tool" || error "Failed to add plugin '${tool}'."
+    fi
+
+    # Install tool version
+    if asdf list "$tool" | grep -q "$version"; then
+        log "Tool '${tool}' version '${version}' is already installed."
+    else
+        log "Installing '${tool}' version '${version}'..."
+        asdf install "$tool" "$version" || error "Failed to install '${tool}' version '${version}'."
+    fi
+
+    # Set tool version globally
+    log "Setting '${tool}' version '${version}' globally."
+    asdf global "$tool" "$version" || error "Failed to set '${tool}' version globally."
+}
+
+# Install all tools
 for tool in "${!tools[@]}"; do
-    asdf plugin-list | grep -q "$tool" || asdf plugin-add "$tool"
-    asdf install "$tool" "${tools[$tool]}"
-    asdf global "$tool" "${tools[$tool]}"
+    install_tool "$tool" "${tools[$tool]}"
 done
+
+log "All tools have been successfully installed and configured."
 
 # --- install helix language servers
 
+### Python LSP installation ---
+if command -v pip >/dev/null; then
+    if pip show python-lsp-server >/dev/null 2>&1; then
+        log "Python language server (pylsp) is already installed. Skipping."
+    else
+        log "Installing Python language server (pylsp)..."
+        pip install "python-lsp-server[all]" || error "Failed to install Python language server."
+        log "Python language server installed successfully."
+    fi
+else
+    error "pip is not installed. Please install Python first."
+fi
 
-### python
-command -v pip >/dev/null || error "pip is not installed. Please install Python first."
-
-pip install "python-lsp-server[all]"
-
-### typescript
-command -v npm >/dev/null || error "NPM is not installed. Please install Node.js first."
-
-log "Installing TypeScript language server..."
-npm install -g typescript-language-server || error "Failed to install TypeScript language server."
-
+### TypeScript LSP installation ---
+if command -v npm >/dev/null; then
+    if npm list -g typescript-language-server >/dev/null 2>&1; then
+        log "TypeScript language server is already installed. Skipping."
+    else
+        log "Installing TypeScript language server..."
+        npm install -g typescript-language-server || error "Failed to install TypeScript language server."
+        log "TypeScript language server installed successfully."
+    fi
+else
+    error "NPM is not installed. Please install Node.js first."
+fi
 
 # --- install dev utils
-command -v cargo >/dev/null || error "Cargo is not installed. Please install Rust first."
 
-log "Installing development utilities via cargo..."
-cargo install eza du-dust fd-find || error "Cargo utility installation failed."
+# Ensure Cargo is available
+if ! command -v cargo >/dev/null; then
+    error "Cargo is not installed. Please install Rust first."
+fi
+
+# Function to check if a cargo package is already installed
+cargo_package_installed() {
+    local package_name=$1
+    cargo install --list 2>/dev/null | grep -E "^${package_name} v[0-9.]+:" >/dev/null
+}
+
+# List of development utilities to install via Cargo
+DEV_UTILS=("eza" "du-dust" "fd-find")
+
+log "Installing development utilities via Cargo..."
+
+for util in "${DEV_UTILS[@]}"; do
+    if cargo_package_installed "$util"; then
+        log "'$util' is already installed. Skipping."
+    else
+        log "Installing '$util'..."
+        if cargo install "$util"; then
+            log "'$util' installed successfully."
+        else
+            warn "Failed to install '$util'."
+        fi
+    fi
+done
+
+log "Development utilities setup complete."
+
+# ----------------------------------- TERMINATION -----------------------------------
+
+log "Setup complete!"
