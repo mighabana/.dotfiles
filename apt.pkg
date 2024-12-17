@@ -3,6 +3,7 @@ git              # Version control system
 build-essential  # Compiler and build tools (gcc, g++, make, etc.)
 curl             # Command-line tool for transferring data with URLs
 tilda            # Preferred terminal emulator
+btop             # Command-line tool for resource monitoring
 
 # --- dev tools
 direnv           # Directory-based environment variable manager

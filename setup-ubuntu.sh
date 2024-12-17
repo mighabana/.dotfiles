@@ -32,7 +32,6 @@ else
     echo "All package dependencies are already installed."
 fi
 
-
 # --- ZSH setup
 
 ### install OhMyZSH!
@@ -96,3 +95,8 @@ pip install "python-lsp-server[all]"
 
 ### typescript
 npm install -g typescript-language-server
+
+# --- install dev utils
+cargo install eza
+cargo install du-dust
+cargo install fd-find
