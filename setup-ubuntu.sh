@@ -1,6 +1,11 @@
 #!/bin/bash
 
-set -e # Exit on any error
+set -e # Exit immediately if any command exitss with a non-zero status
+set -u # treat unset variables as an error
+set -o pipefail # return exit status of the last command in a pipeline that failed
+
+log() { echo -e "\033[1;32m[INFO]\033[0m $1"; }
+error() { echo -e "\033[1;31m[ERROR]\033[0m $1"; exit 1; }
 
 # ----------------------------------- SETUP -----------------------------------
 
@@ -26,24 +31,39 @@ done < apt.pkg
 
 # Check if there are missing packages
 if [ "${#missing_packages[@]}" -gt 0 ]; then
-    echo "Installing missing packages: ${missing_packages[@]}"
+    log "Installing missing packages: ${missing_packages[@]}"
     sudo apt install -y "${missing_packages[@]}"
 else
-    echo "All package dependencies are already installed."
+    log "All package dependencies are already installed."
 fi
 
 # --- ZSH setup
 
 ### install OhMyZSH!
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+if [[ -d "$HOME/.oh-my-zsh" ]]; then
+    log "Oh-My-Zsh already installed, skipping."
+else
+    log "Installing Oh-My-Zsh..."
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || error "Failed to install Oh-My-Zsh."
+fi
 
 ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
 
+install_zsh_plugin() {
+    plugin_url=$1
+    plugin_dir=$2
+    if [[ -d "$plugin_dir" ]]; then
+        log "Plugin already exists: $plugin_dir, skipping."
+    else
+        git clone --depth=1 "$plugin_url" "$plugin_dir" && log "Installed plugin: $plugin_dir"
+    fi
+}
+
 ### install powerlevel10k
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
+install_zsh_plugin "https://github.com/romkatv/powerlevel10k.git" "$ZSH_CUSTOM/themes/powerlevel10k"
 
 ### install zsh-autosuggestions
-git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+install_zsh_plugin "https://github.com/zsh-users/zsh-autosuggestions" "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 
 # --- install nerd fonts
 FONT_DIR="${HOME}/.fonts
@@ -53,22 +73,31 @@ sudo fc-cache -f -v
 
 # --- install asdf
 if [[ ! -d "$HOME/.asdf" ]]; then
-    git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.1
+    log "Installing asdf..."
+    git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.1 || error "Failed to install asdf."
+else
+    log "asdf already installed, skipping."
 fi
 
 # ----------------------------------- CONFIGS -----------------------------------
+
+create_symlink() {
+    src=$1
+    dest=$2
+    ln -sf "$src" "$dest" && log "Created symlink: $src -> $dest"
+}
 
 # --- setup symlinks to config files
 
 mkdir ${HOME}/.config/helix/themes/
 
-ln -sf $PWD/.bashrc ${HOME}
-ln -sf $PWD/.zshrc ${HOME}
-ln -sf $PWD/.gitconfig ${HOME}
-ln -sf $PWD/.p10k.zsh ${HOME}
-ln -sf $PWD/helix/config.toml ${HOME}/.config/helix/
-ln -sf $PWD/helix/themes/night_owl.toml ${HOME}/.config/helix/themes/
-ln -sf $PWD/tilda/config_0 ${HOME}/.config/tilda/
+create_symlink $PWD/.bashrc ${HOME}
+create_symlink $PWD/.zshrc ${HOME}
+create_symlink $PWD/.gitconfig ${HOME}
+create_symlink $PWD/.p10k.zsh ${HOME}
+create_symlink $PWD/helix/config.toml ${HOME}/.config/helix/
+create_symlink $PWD/helix/themes/night_owl.toml ${HOME}/.config/helix/themes/
+create_symlink $PWD/tilda/config_0 ${HOME}/.config/tilda/
 
 # ----------------------------------- INSTALLATION -----------------------------------
 
@@ -91,12 +120,19 @@ done
 # --- install helix language servers
 
 ### python
+command -v pip >/dev/null || error "pip is not installed. Please install Python first."
+
 pip install "python-lsp-server[all]"
 
 ### typescript
-npm install -g typescript-language-server
+command -v npm >/dev/null || error "NPM is not installed. Please install Node.js first."
+
+log "Installing TypeScript language server..."
+npm install -g typescript-language-server || error "Failed to install TypeScript language server."
+
 
 # --- install dev utils
-cargo install eza
-cargo install du-dust
-cargo install fd-find
+command -v cargo >/dev/null || error "Cargo is not installed. Please install Rust first."
+
+log "Installing development utilities via cargo..."
+cargo install eza du-dust fd-find || error "Cargo utility installation failed."
