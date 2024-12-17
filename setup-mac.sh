@@ -1,56 +1,77 @@
 #!/bin/bash
 
-# ----------------------------------- INSTALLATION -----------------------------------
+set -e # Exit immediately if any command exitss with a non-zero status
+set -u # treat unset variables as an error
+set -o pipefail # return exit status of the last command in a pipeline that failed
 
-# install Homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+log() { echo -e "\033[1;32m[INFO]\033[0m $1"; }
+error() { echo -e "\033[1;31m[ERROR]\033[0m $1"; exit 1; }
 
-### add Homebrew to my PATH
+# ----------------------------------- SETUP -----------------------------------
+
+# --- homebrew setup
+
+### install Homebrew
+if ! command -v brew &>/dev/null; then
+    log "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" || error "Homebrew installation failed."
+else
+    log "Homebrew already installed, skipping."
+fi
+
+# add Homebrew to my PATH
 (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ${HOME}/.zprofile
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# install CLI utilities
-brew install $(<brew.pkg)
+### install package dependencies
+if [[ -f "brew.pkg" ]]; then
+    log "Installing CLI utilities from brew.pkg..."
+    brew install $(<brew.pkg) || error "Failed to install Homebrew packages."
+else
+    error "brew.pkg file not found."
+fi
 
-# install OhMyZSH!
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# --- ZSH setup
+
+### install OhMyZSH!
+if [[ -d "$HOME/.oh-my-zsh" ]]; then
+    log "Oh-My-Zsh already installed, skipping."
+else
+    log "Installing Oh-My-Zsh..."
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || error "Failed to install Oh-My-Zsh."
+fi
+
+ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
+
+install_zsh_plugin() {
+    plugin_url=$1
+    plugin_dir=$2
+    if [[ -d "$plugin_dir" ]]; then
+        log "Plugin already exists: $plugin_dir, skipping."
+    else
+        git clone --depth=1 "$plugin_url" "$plugin_dir" && log "Installed plugin: $plugin_dir"
+    fi
+}
 
 ### install powerlevel10k
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+install_zsh_plugin "https://github.com/romkatv/powerlevel10k.git" "$ZSH_CUSTOM/themes/powerlevel10k"
 
 ### install zsh-autosuggestions
-git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"/plugins/zsh-autosuggestions
+install_zsh_plugin "https://github.com/zsh-users/zsh-autosuggestions" "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 
 # install nerd fonts
-cp -R $PWD/fonts/Mononoki\ Nerd/ ~/Library/Fonts/
+log "Installing Nerd Fonts..."
+brew tap homebrew/cask-fonts
+brew install --cask font-mononoki-nerd-font
 
-# install asdf
-git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.12.0
-
-### configure asdf packages and global versions
-asdf plugin-add python
-asdf install python 3.12.5
-asdf global python 3.12.5
-
-asdf plugin-add terraform https://github.com/asdf-community/asdf-hashicorp.git
-asdf install terraform 1.9.5
-asdf global terraform 1.9.5
-
-asdf plugin add gcloud https://github.com/jthegedus/asdf-gcloud
-asdf install gcloud 491.0.0
-asdf global gcloud 491.0.0
-
-asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
-asdf install nodejs v20.17.0
-asdf global nodejs v20.17.0
-
-asdf plugin-add rust https://github.com/asdf-community/asdf-rust.git
-asdf install rust 1.80.1
-asdf global rust 1.80.1
-
-### setup helix language servers
-pip install "python-lsp-server[all]"
-npm install -g typescript-language-server
+# --- install asdf
+if [[ ! -d "$HOME/.asdf" ]]; then
+    log "Installing asdf..."
+    git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.1 || error "Failed to install asdf."
+else
+    log "asdf already installed, skipping."
+fi
 
 # install SOPS
 curl -LO https://github.com/getsops/sops/releases/download/v3.9.1/sops-v3.9.1.darwin.arm64
@@ -59,14 +80,59 @@ sudo chmod +x /usr/local/bin/sops
 
 # ----------------------------------- CONFIGS -----------------------------------
 
-# setup symlinks to config files
-ln -siv $PWD/.bashrc ${HOME}:
-ln -siv $PWD/.zshrc ${HOME}
-ln -siv $PWD/.gitconfig ${HOME}
-ln -siv $PWD/.gitconfig.personal ${HOME}
-ln -siv $PWD/.gitconfig.fgi ${HOME}
-ln -siv $PWD/.p10k.zsh ${HOME}
+create_symlink() {
+    src=$1
+    dest=$2
+    ln -sf "$src" "$dest" && log "Created symlink: $src -> $dest"
+}
 
-ln -siv $PWD/helix/config.toml ${HOME}/.config/helix/
+# --- setup symlinks to config files
+
 mkdir ${HOME}/.config/helix/themes/
-ln -siv $PWD/helix/themes/night_owl.toml ${HOME}/.config/helix/themes/
+
+create_symlink $PWD/.bashrc ${HOME}
+create_symlink $PWD/.zshrc ${HOME}
+create_symlink $PWD/.gitconfig ${HOME}
+create_symlink $PWD/.p10k.zsh ${HOME}
+create_symlink $PWD/helix/config.toml ${HOME}/.config/helix/
+create_symlink $PWD/helix/themes/night_owl.toml ${HOME}/.config/helix/themes/
+create_symlink $PWD/tilda/config_0 ${HOME}/.config/tilda/
+
+# ----------------------------------- INSTALLATION -----------------------------------
+
+# --- install asdf plugins and tools
+
+declare -A tools=(
+    [python]=3.12.8
+    [terraform]=1.10.2
+    [gcloud]=503.0.0
+    [nodejs]=v22.12.0
+    [rust]=1.83.0
+)
+
+for tool in "${!tools[@]}"; do
+    asdf plugin-list | grep -q "$tool" || asdf plugin-add "$tool"
+    asdf install "$tool" "${tools[$tool]}"
+    asdf global "$tool" "${tools[$tool]}"
+done
+
+# --- install helix language servers
+
+
+### python
+command -v pip >/dev/null || error "pip is not installed. Please install Python first."
+
+pip install "python-lsp-server[all]"
+
+### typescript
+command -v npm >/dev/null || error "NPM is not installed. Please install Node.js first."
+
+log "Installing TypeScript language server..."
+npm install -g typescript-language-server || error "Failed to install TypeScript language server."
+
+
+# --- install dev utils
+command -v cargo >/dev/null || error "Cargo is not installed. Please install Rust first."
+
+log "Installing development utilities via cargo..."
+cargo install eza du-dust fd-find || error "Cargo utility installation failed."
