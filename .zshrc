@@ -31,7 +31,7 @@ alias mv='mv -iv'
 alias rm='rm -i'
 
 ### Colorize commands
-command -v eza &>/dev/null && alias ls='eza'
+alias ls='eza'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -114,7 +114,7 @@ python_venv() {
     done
     if [[ -n "$VIRTUAL_ENV" ]]; then
         parentdir=$(dirname "$VIRTUAL_ENV")
-        if [[ "$PWD" != "$parentdir"/* ]]; then
+        if [[ "$PWD"/ != "$parentdir"/* ]]; then
             deactivate
         fi
     fi
