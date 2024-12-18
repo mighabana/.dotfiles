@@ -130,6 +130,7 @@ create_symlink $PWD/.zshrc ${HOME}
 create_symlink $PWD/.gitconfig ${HOME}
 create_symlink $PWD/.p10k.zsh ${HOME}
 create_symlink $PWD/helix/config.toml ${HOME}/.config/helix/
+create_symlink $PWD/helix/languages.toml ${HOME}/.config/helix/
 create_symlink $PWD/helix/themes/night_owl.toml ${HOME}/.config/helix/themes/
 create_symlink $PWD/tilda/config_0 ${HOME}/.config/tilda/
 
@@ -181,14 +182,14 @@ log "All tools have been successfully installed and configured."
 
 # --- install helix language servers
 
-### Python LSP installation ---
+### Ruff installation ---
 if command -v pip >/dev/null; then
-    if pip show python-lsp-server >/dev/null 2>&1; then
-        log "Python language server (pylsp) is already installed. Skipping."
+    if pip show ruff >/dev/null 2>&1; then
+        log "Ruff (ruff) is already installed. Skipping."
     else
-        log "Installing Python language server (pylsp)..."
-        pip install "python-lsp-server[all]" || error "Failed to install Python language server."
-        log "Python language server installed successfully."
+        log "Installing Ruff (ruff)..."
+        pip install ruff || error "Failed to install Ruff."
+        log "Ruff installed successfully."
     fi
 else
     error "pip is not installed. Please install Python first."

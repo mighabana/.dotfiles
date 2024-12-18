@@ -1,0 +1,9 @@
+[language-server.ruff]
+command = "ruff"
+args = ["server", "-q", "--preview"]
+
+
+[[language]]
+name = "python"
+language-servers = [ "ruff" ]
+auto-format = true
