@@ -127,3 +127,5 @@ python_venv
 [[ ":$PATH:" != *":/opt/homebrew/opt/curl/bin:"* ]] && export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 [[ ":$PATH:" != *":/usr/local/opt/tcl-tk/bin:"* ]] && export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
 [[ ":$PATH:" != *":${HOME}/.cargo/bin:"* ]] && export PATH="${HOME}/.cargo/bin:$PATH"
+
+export HELIX_RUNTIME="$HOME/src/helix/runtime"
