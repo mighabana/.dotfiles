@@ -2,6 +2,7 @@
 git              # Version control system
 build-essential  # Compiler and build tools (gcc, g++, make, etc.)
 curl             # Command-line tool for transferring data with URLs
+ca-certificates  # Provides certificates for secure communication via SSL/TLS
 tilda            # Preferred terminal emulator (drop-down style)
 btop             # Command-line tool for resource monitoring (system stats)
 

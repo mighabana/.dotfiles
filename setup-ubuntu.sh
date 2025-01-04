@@ -182,7 +182,7 @@ log "All tools have been successfully installed and configured."
 
 # --- install helix language servers
 
-### Ruff installation ---
+### Ruff installation
 if command -v pip >/dev/null; then
     if pip show ruff >/dev/null 2>&1; then
         log "Ruff (ruff) is already installed. Skipping."
@@ -195,7 +195,7 @@ else
     error "pip is not installed. Please install Python first."
 fi
 
-### TypeScript LSP installation ---
+### TypeScript LSP installation
 if command -v npm >/dev/null; then
     if npm list -g typescript-language-server >/dev/null 2>&1; then
         log "TypeScript language server is already installed. Skipping."
@@ -240,6 +240,64 @@ for util in "${DEV_UTILS[@]}"; do
 done
 
 log "Development utilities setup complete."
+
+# --- install Docker
+
+log "Checking for Docker installation..."
+
+if command -v docker >/dev/null 2>&1; then
+    log "Docker is already installed. Skipping installation."
+else
+    log "Docker is not installed. Proceeding with installation..."
+
+    # Set up Docker's official GPG key and repository
+    sudo install -m 0755 -d /etc/apt/keyrings || error "Failed to create keyrings directory."
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc || error "Failed to download Docker GPG key."
+    sudo chmod a+r /etc/apt/keyrings/docker.asc || error "Failed to set permissions on Docker GPG key."
+
+    log "Adding Docker repository to APT sources..."
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null || error "Failed to add Docker repository."
+
+    log "Updating APT package index..."
+    sudo apt-get update || error "Failed to update APT package index."
+
+    log "Installing Docker packages..."
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || error "Failed to install Docker packages."
+
+    log "Docker installation completed successfully."
+fi
+
+# --- install pgAdmin4
+
+log "Checking for pgAdmin4 installation..."
+
+# Check if pgAdmin4 is already installed
+if dpkg -s pgadmin4 &>/dev/null; then
+    log "pgAdmin4 is already installed. Skipping installation."
+else
+    log "pgAdmin4 is not installed. Proceeding with installation..."
+
+    # Install the public key for the repository
+    log "Adding the pgAdmin4 GPG key..."
+    curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg || error "Failed to add pgAdmin4 GPG key."
+
+    # Create the repository configuration file
+    log "Adding the pgAdmin4 repository to APT sources..."
+    sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list' || error "Failed to add pgAdmin4 repository."
+
+    # Update package lists
+    log "Updating APT package index..."
+    sudo apt update || error "Failed to update APT package index."
+
+    # Install pgAdmin4
+    log "Installing pgAdmin4..."
+    sudo apt install -y pgadmin4 || error "Failed to install pgAdmin4."
+
+    log "pgAdmin4 installation completed successfully."
+fi
 
 # ----------------------------------- TERMINATION -----------------------------------
 
