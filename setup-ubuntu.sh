@@ -199,6 +199,32 @@ done
 
 log "All tools have been successfully installed and configured."
 
+# --- install Helix
+log "# --- installing helix..."
+
+# Check if Helix is already installed
+if [[ -d "$HOME/src/helix" ]]; then
+    log "Helix is already installed. Skipping installation."
+else
+    log "Installing Helix.."
+
+    # Create the source directory if it doesn't exist
+    if [[ ! -d "$HOME/src" ]]; then
+        log "Creating source directory: $HOME/src"
+        mkdir -p "$HOME/src" || error "Failed to create source directory."
+    fi
+
+    # Clone the Helix repository
+    log "Cloning Helix repository into $HOME/src/helix..."
+    git clone git@github.com:helix-editor/helix.git "$HOME/src/helix" || error "Failed to clone Helix repository."
+
+    # Install Helix using Cargo
+    log "Installing Helix using Cargo..."
+    cargo install --path "$HOME/src/helix/helix-term" --locked || error "Failed to install Helix."
+
+    log "Helix installation completed successfully."
+fi
+
 # --- install helix language servers
 log "# --- installing helix language servers..."
 
