@@ -30,7 +30,7 @@ alias mv='mv -iv'
 alias rm='rm -i'
 
 ### Colorize commands
-alias ls='eza'
+alias ls='eza --color=always --git --icons=always'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
