@@ -3,6 +3,7 @@
 	email = mighabana@gmail.com
 [core]
 	editor = hx
+	pager = delta
 [init]
 	defaultBranch = main
 [alias]
@@ -18,3 +19,12 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true    # use n to N to move between diff sections
+	side-by-side = true
+[merge]
+	conflictstyle = diff3
+[diff]
+	colorMoved = default
