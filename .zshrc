@@ -1,5 +1,4 @@
 # --- oh-my-zsh configuration
-
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -95,6 +94,27 @@ fi
 # colorize ls
 [ -x /usr/bin/dircolors ] && eval "$(dircolors -b)"
 
+# --- FZF
+
+# setup fzf key bindings and fuzzy completion
+eval "$(fzf --zsh)"
+
+# use fd instead of fzf
+
+export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
+
+# use fd for listing path candidates
+_fzf_compgen_path() {
+  fd --hidden --exclude .git . "$1"
+}
+
+# use fd to generate the list for directory completion
+_fzf_compgen_dir() {
+  fd --type=d --hidden --exclude .git . "$1"
+}
+
 ### POWERLEVEL
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -126,6 +146,6 @@ python_venv
 
 [[ ":$PATH:" != *":/opt/homebrew/opt/curl/bin:"* ]] && export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 [[ ":$PATH:" != *":/usr/local/opt/tcl-tk/bin:"* ]] && export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
-[[ ":$PATH:" != *":${HOME}/.cargo/bin:"* ]] && export PATH="${HOME}/.cargo/bin:$PATH"
 
 export HELIX_RUNTIME="$HOME/src/helix/runtime"
+

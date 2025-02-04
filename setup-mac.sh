@@ -64,8 +64,8 @@ install_zsh_plugin "https://github.com/romkatv/powerlevel10k.git" "$ZSH_CUSTOM/t
 install_zsh_plugin "https://github.com/zsh-users/zsh-autosuggestions" "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 
 # install nerd fonts
-# log "Installing Nerd Fonts..."
-# brew install --cask font-mononoki-nerd-font
+log "Installing Nerd Fonts..."
+brew install font-mononoki-nerd-font
 
 # --- install asdf
 log "# --- installing asdf..."
@@ -98,7 +98,7 @@ create_symlink() {
 # --- setup symlinks to config files
 
 if ! [[ -d ${HOME}/.config/helix/themes ]]; then
-    mkdir ${HOME}/.config/helix/themes
+    mkdir -p ${HOME}/.config/helix/themes
 fi
 
 create_symlink $PWD/.bashrc ${HOME}/.bashrc
@@ -216,40 +216,6 @@ if command -v npm >/dev/null; then
 else
     error "NPM is not installed. Please install Node.js first."
 fi
-
-# --- install dev utils
-log "# --- installing dev utils..."
-
-# Ensure Cargo is available
-if ! command -v cargo >/dev/null; then
-    error "Cargo is not installed. Please install Rust first."
-fi
-
-# Function to check if a cargo package is already installed
-cargo_package_installed() {
-    local package_name=$1
-    cargo install --list 2>/dev/null | grep -E "^${package_name} v[0-9.]+:" >/dev/null
-}
-
-# List of development utilities to install via Cargo
-DEV_UTILS=("eza" "du-dust" "fd-find")
-
-log "Installing development utilities via Cargo..."
-
-for util in "${DEV_UTILS[@]}"; do
-    if cargo_package_installed "$util"; then
-        log "'$util' is already installed. Skipping."
-    else
-        log "Installing '$util'..."
-        if cargo install "$util"; then
-            log "'$util' installed successfully."
-        else
-            warn "Failed to install '$util'."
-        fi
-    fi
-done
-
-log "Development utilities setup complete."
 
 # ----------------------------------- TERMINATION -----------------------------------
 
