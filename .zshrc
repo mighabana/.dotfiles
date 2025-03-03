@@ -27,7 +27,6 @@ alias q='exit'
 alias c='clear'
 alias cp='cp -iv'
 alias mv='mv -iv'
-alias rm='rm -i'
 
 ### Colorize commands
 alias ls='eza --color=always --git --icons=always'
@@ -42,9 +41,9 @@ TREE_IGNORE=".cache .git logs node_modules"
 
 alias ll='ls -lGah'
 alias la='ls -a'
-alias lt='ls --tree -I "${TREE_IGNORE}"'
-alias lt1='ls --tree -L 1 -I "${TREE_IGNORE}"'
+alias lt='ls --tree -L 1 -I "${TREE_IGNORE}"'
 alias lt2='ls --tree -L 2 -I "${TREE_IGNORE}"'
+alias lt3='ls --tree -L 3 -I "${TREE_IGNORE}"'
 
 # TOP
 
@@ -146,6 +145,7 @@ python_venv
 
 [[ ":$PATH:" != *":/opt/homebrew/opt/curl/bin:"* ]] && export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 [[ ":$PATH:" != *":/usr/local/opt/tcl-tk/bin:"* ]] && export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
+[[ ":$PATH:" != *":$HOME/.dotfiles/scripts/bin:"* ]] && export PATH="$HOME/.dotfiles/scripts/bin:$PATH"
 
 export HELIX_RUNTIME="$HOME/src/helix/runtime"
 
