@@ -49,6 +49,9 @@ alias lt3='ls --tree -L 3 -I "${TREE_IGNORE}"'
 
 command -v btop &>/dev/null && alias top='btop'
 
+#  VIM
+alias nv='nvim'
+
 # --------------------------------- SETTINGS ----------------------------------
 
 # reference: https://zsh.sourceforge.io/Doc/Release/Options.html
@@ -87,7 +90,7 @@ envrc() {
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vi'
 else
-  export EDITOR='hx'
+  export EDITOR='nvim'
 fi
 
 # colorize ls
