@@ -356,34 +356,37 @@ else
 fi    
 
 log "Docker installation completed successfully."
-# --- install pgAdmin4
-log "# --- installing pgAdmin4"
 
-log "Checking for pgAdmin4 installation..."
+# --- install DBeaver
 
-# Check if pgAdmin4 is already installed
-if dpkg -s pgadmin4 &>/dev/null; then
-    log "pgAdmin4 is already installed. Skipping installation."
+log "# --- installing DBeaver"
+
+log "Checking for DBeaver installation..."
+
+# Check if DBeaver is already installed
+if dpkg -s dbeaver-ce &>/dev/null; then
+    log "DBeaver is already installed. Skipping installation."
 else
-    log "pgAdmin4 is not installed. Proceeding with installation..."
+    log "DBeaver is not installed. Proceeding with installation..."
 
-    # Install the public key for the repository
-    log "Adding the pgAdmin4 GPG key..."
-    curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg || error "Failed to add pgAdmin4 GPG key."
-
-    # Create the repository configuration file
-    log "Adding the pgAdmin4 repository to APT sources..."
-    sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list' || error "Failed to add pgAdmin4 repository."
+    # Check if the PPA repository is already added
+    log "Checking if the DBeaver PPA repository is already added..."
+    if grep -q "^deb .*serge-rider/dbeaver-ce" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+        log "DBeaver PPA repository is already configured. Skipping repository addition."
+    else
+        log "Adding the DBeaver PPA repository..."
+        sudo add-apt-repository -y ppa:serge-rider/dbeaver-ce || error "Failed to add DBeaver PPA repository."
+    fi
 
     # Update package lists
     log "Updating APT package index..."
     sudo apt update || error "Failed to update APT package index."
 
-    # Install pgAdmin4
-    log "Installing pgAdmin4..."
-    sudo apt install -y pgadmin4 || error "Failed to install pgAdmin4."
+    # Install DBeaver
+    log "Installing DBeaver..."
+    sudo apt install -y dbeaver-ce || error "Failed to install DBeaver."
 
-    log "pgAdmin4 installation completed successfully."
+    log "DBeaver installation completed successfully."
 fi
 
 # ----------------------------------- TERMINATION -----------------------------------
