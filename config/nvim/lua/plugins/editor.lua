@@ -10,6 +10,12 @@ return {
       'nvim-telescope/telescope-file-browser.nvim', 'nvim-lua/plenary.nvim' 
     },
   },
+  {
+    "numToStr/Comment.nvim",
+    keys = require("config.plugin_keymaps").comments,
+    event = "BufReadPost",
+    opts = {}
+  },
   { -- TODO: plugin
     "folke/todo-comments.nvim",
     keys = require("config.plugin_keymaps").todo_comments,

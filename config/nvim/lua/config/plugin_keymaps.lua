@@ -85,7 +85,7 @@ M.todo_comments = {
   {
     "gcmb",
     function()
-      vim.cmd("norm gcO BUG:  ")
+      vim.cmd("norm gcO BUG: ")
       vim.cmd("startinsert")
     end,
     mode = "n",
@@ -107,6 +107,18 @@ M.todo_comments = {
     mode = "n",
     desc = "Previous todo comment",
   },
+}
+
+M.comments = {
+  {
+    "gcy",
+    function()
+      vim.cmd("norm yy")
+      vim.vmd("norm gcc")
+    end,
+    mode = "n",
+    desc = "Yank and comment",
+  }
 }
 
 return M
