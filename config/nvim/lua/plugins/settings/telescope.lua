@@ -1,3 +1,4 @@
+-- TODO: customize further. currently based on EuCaue's setup.
 local telescope = require("telescope")
 local icons = require("utils").icons
 local utils = require("utils")
