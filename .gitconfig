@@ -2,7 +2,7 @@
 	name = Miguel Habana
 	email = mighabana@gmail.com
 [core]
-	editor = hx
+	editor = nvim
 	pager = delta
 [init]
 	defaultBranch = main
