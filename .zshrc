@@ -1,3 +1,5 @@
+OS_TYPE="$(uname -s)"
+
 # --- oh-my-zsh configuration
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -29,7 +31,9 @@ alias cp='cp -iv'
 alias mv='mv -iv'
 
 ### Colorize commands
-alias ls='eza --color=always --git --icons=always'
+if command -v eza >/dev/null 2>&1; then
+    alias ls='eza --color=always --git --icons=always'
+fi
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -96,27 +100,6 @@ fi
 # colorize ls
 [ -x /usr/bin/dircolors ] && eval "$(dircolors -b)"
 
-# --- FZF
-
-# setup fzf key bindings and fuzzy completion
-eval "$(fzf --zsh)"
-
-# use fd instead of fzf
-
-export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
-
-# use fd for listing path candidates
-_fzf_compgen_path() {
-  fd --hidden --exclude .git . "$1"
-}
-
-# use fd to generate the list for directory completion
-_fzf_compgen_dir() {
-  fd --type=d --hidden --exclude .git . "$1"
-}
-
 ### POWERLEVEL
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -150,5 +133,30 @@ python_venv
 [[ ":$PATH:" != *":/usr/local/opt/tcl-tk/bin:"* ]] && export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
 [[ ":$PATH:" != *":$HOME/.dotfiles/scripts/bin:"* ]] && export PATH="$HOME/.dotfiles/scripts/bin:$PATH"
 
+if [[ "$OS_TYPE" == "Linux" ]]; then
+    [[ ":$PATH:" != *":/opt/nvim-linux-arm64/bin"* ]] && export PATH="/opt/nvim-linux-arm64/bin:$PATH"
+    [[ ":$PATH:" != *":$HOME/.fzf/bin"* ]] && export PATH="$HOME/.fzf/bin:$PATH"
+fi
+
 export HELIX_RUNTIME="$HOME/src/helix/runtime"
 
+# --- FZF
+
+# setup fzf key bindings and fuzzy completion
+eval "$(fzf --zsh)"
+
+# use fd instead of fzf
+
+export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
+
+# use fd for listing path candidates
+_fzf_compgen_path() {
+  fd --hidden --exclude .git . "$1"
+}
+
+# use fd to generate the list for directory completion
+_fzf_compgen_dir() {
+  fd --type=d --hidden --exclude .git . "$1"
+}
