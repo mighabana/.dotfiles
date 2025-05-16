@@ -139,18 +139,12 @@ create_symlink() {
 # --- setup symlinks to config files
 log "# --- setting up symlinks for config files..."
 
-if ! [[ -d ${HOME}/.config/helix/themes ]]; then
-    mkdir ${HOME}/.config/helix/themes
-fi
-
-create_symlink $PWD/.bashrc $HOME/.bashrc
-create_symlink $PWD/.zshrc $HOME/.zshrc
-create_symlink $PWD/.gitconfig $HOME/.gitconfig
-create_symlink $PWD/.p10k.zsh $HOME/.p10k.zsh
-create_symlink $PWD/helix/config.toml $HOME/.config/helix/config.toml
-create_symlink $PWD/helix/languages.toml $HOME/.config/helix/languages.toml
-create_symlink $PWD/helix/themes/night_owl.toml $HOME/.config/helix/themes/night_owl.toml
-create_symlink $PWD/tilda/config_0 $HOME/.config/tilda/config_0
+create_symlink $HOME/.dotfiles/.bashrc $HOME/.bashrc
+create_symlink $HOME/.dotfiles/.zshrc $HOME/.zshrc
+create_symlink $HOME/.dotfiles/.gitconfig $HOME/.gitconfig
+create_symlink $HOME/.dotfiles/.p10k.zsh $HOME/.p10k.zsh
+create_symlink $HOME/.dotfiles/config/helix $HOME/.config/helix
+create_symlink $HOME/.dotfiles/config/nvim $HOME/.config/nvim
 
 # ----------------------------------- INSTALLATION -----------------------------------
 
@@ -162,7 +156,7 @@ declare -A tools=(
     [terraform]=1.10.2
     [gcloud]=503.0.0
     [nodejs]=v22.12.0
-    [rust]=1.83.0
+    [rust]=1.87.0
     [postgres]=17.2
 )
 
@@ -198,6 +192,34 @@ for tool in "${!tools[@]}"; do
 done
 
 log "All tools have been successfully installed and configured."
+
+# --- install neovim
+log "# --- installing Neovim"
+
+log "Checking for Neovim installation..."
+
+if command -v nvim >/dev/null 2>&1; then
+    log "Neovim is already installed. Skipping installation."
+else
+    log "Neovim is not installed. Proceeding with installation..."
+
+    NEOVIM_TAR="nvim-linux-x86_64.tar.gz"
+    NEOVIM_URL="https://github.com/neovim/neovim/releases/latest/download/${NEOVIM_TAR}"
+
+    log "Downloading Neovim (x86_64)..."
+    curl -LO "$NEOVIM_URL" || error "Failed to download Neovim."
+
+    log "Removing any existing Neovim installation in /opt/nvim..."
+    sudo rm -rf /opt/nvim || error "Failed to remove existing Neovim directory."
+
+    log "Extracting Neovim to /opt..."
+    sudo tar -C /opt -xzf "$NEOVIM_TAR" || error "Failed to extract Neovim archive."
+
+    log "Cleaning up Neovim archive..."
+    rm -f "$NEOVIM_TAR" || error "Failed to remove Neovim archive."
+
+    log "Neovim installation completed successfully."
+fi
 
 # --- install Helix
 log "# --- installing helix..."
@@ -287,6 +309,29 @@ for util in "${DEV_UTILS[@]}"; do
 done
 
 log "Development utilities setup complete."
+
+# --- install fzf
+log "# --- installing fzf..."
+
+# Check if fzf is already installed
+if command -v fzf >/dev/null 2>&1; then
+    log "fzf is already installed. Skipping installation."
+else
+    log "Cloning fzf..."
+
+    if [[ -d "$HOME/.fzf" ]]; then
+        log "fzf repository already cloned."
+    else
+        # Clone the fzf repository
+        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf" || error "Failed to clone fzf repository."
+    fi
+
+    log "Installing fzf..."
+    # Run the install script
+    "$HOME/.fzf/install" --key-bindings --completion --no-update-rc || error "Failed to run fzf install script."
+
+    log "fzf installation completed successfully."
+fi
 
 # --- install Docker
 log "# --- installing docker..."
