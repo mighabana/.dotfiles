@@ -134,7 +134,8 @@ python_venv
 [[ ":$PATH:" != *":$HOME/.dotfiles/scripts/bin:"* ]] && export PATH="$HOME/.dotfiles/scripts/bin:$PATH"
 
 if [[ "$OS_TYPE" == "Linux" ]]; then
-    [[ ":$PATH:" != *":/opt/nvim-linux-arm64/bin"* ]] && export PATH="/opt/nvim-linux-arm64/bin:$PATH"
+    ARCH="$(uname -p)"
+    [[ ":$PATH:" != *":/opt/nvim-linux-${ARCH}/bin"* ]] && export PATH="/opt/nvim-linux-${ARCH}/bin:$PATH"
     [[ ":$PATH:" != *":$HOME/.fzf/bin"* ]] && export PATH="$HOME/.fzf/bin:$PATH"
 fi
 
