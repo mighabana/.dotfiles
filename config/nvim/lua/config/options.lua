@@ -8,3 +8,5 @@ vim.api.nvim_create_autocmd("FileType", {
   pattern = "python",
   command = "setlocal tabstop=4 shiftwidth=4 expandtab",
 })
+
+vim.api.nvim_set_option("clipboard", "unnamed")
