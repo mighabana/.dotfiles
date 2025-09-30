@@ -1,5 +1,9 @@
 vim.keymap.set('n', '∆', '<cmd>m .+1<CR>==', { desc = 'Move line up' })
 vim.keymap.set('n', '˚', '<cmd>m .-2<CR>==', { desc = 'Move line down' })
+vim.keymap.set("n", "<leader>d", function()
+  vim.diagnostic.open_float(nil, { scope = "cursor" })
+end, {desc = "Show diagnostics"})
+vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code Action" })
 
 
 -- telescope

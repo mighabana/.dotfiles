@@ -255,8 +255,8 @@ M.icons = {
     minus_square = "󰛲",
     empty = "󱋭",
     new = "󰎔",
-    prompt_prefix = "󰋇 ",
-    selection_caret = " ",
+    prompt_prefix = " ",
+    selection_caret = "❯ ",
   },
   git = {
     git = "󰊢 ",

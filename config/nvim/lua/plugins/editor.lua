@@ -6,8 +6,13 @@ return {
     config = function()
       require("plugins.settings.telescope")
     end,
-    dependencies = { 
-      'nvim-telescope/telescope-file-browser.nvim', 'nvim-lua/plenary.nvim' 
+    dependencies = {
+      'nvim-telescope/telescope-file-browser.nvim', 'nvim-lua/plenary.nvim', {
+        "nvim-telescope/telescope-ui-select.nvim",
+        config = function()
+          require("telescope").load_extension("ui-select")
+        end,
+      }
     },
   },
   {
@@ -53,4 +58,17 @@ return {
       },
     },
   },
+  { -- Quality of Life plugins for Neovim
+    "folke/snacks.nvim",
+    priority = 1000,
+    lazy = false,
+    opts = {
+    },
+  },
+  { -- show Git changes in line
+    "lewis6991/gitsigns.nvim",
+    config = function()
+      require("gitsigns").setup()
+    end,
+  }
 }

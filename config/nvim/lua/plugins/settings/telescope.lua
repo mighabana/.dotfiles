@@ -11,7 +11,7 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function(ctx)
     vim.api.nvim_buf_call(ctx.buf, function()
       vim.fn.matchadd("TelescopeParent", "\t\t.*$")
-      vim.api.nvim_set_hl(0, "TelescopeParent", { link = "Comment" })
+      vim.api.nvim_set_hl(1, "TelescopeParent", { link = "Comment" })
     end)
   end,
 })
@@ -22,7 +22,7 @@ local function filenameFirst(_, path)
   if parent == "." then
     return tail
   end
-  return string.format("%s\t\t%s", tail, parent)
+  return string.format("%s\t\t[%s]", tail, parent)
 end
 
 telescope.setup({
@@ -30,16 +30,14 @@ telescope.setup({
     initial_mode = "insert",
     border = utils.border_status ~= "none",
     results_title = false,
-    borderchars = {
-      { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
-      prompt = { "─", "│", " ", "│", "┌", "┐", "│", "│" },
-      results = { "─", "│", "─", "│", "├", "┤", "┘", "└" },
-      preview = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
+    layout_strategy = "horizontal",
+    layout_config = {
+      prompt_position = 'bottom',
+      preview_width = 0.5,
+      width = 0.8,
     },
-
-    width = 0.8,
-    previewer = false,
-    preview = false,
+    previewer = true,
+    preview = true,
     prompt_title = false,
 
     vimgrep_arguments = {
@@ -131,7 +129,7 @@ telescope.setup({
     buffers = {
       sort_lastused = true,
       sort_mru = true,
-      bufnr_width = 10,
+      bufnr_width = 11,
       mappings = {
         i = {
           ["<c-d>"] = actions.delete_buffer,
@@ -186,8 +184,20 @@ telescope.setup({
       hidden_files = true, -- default: false
       order_by = "asc",
     },
+    ["ui-select"] = require('telescope.themes').get_cursor({
+      border = true,
+      previewer = false,
+      prompt_title = false,
+      results_title = false,
+      prompt_prefix = " ",
+      layout_config = {
+        width = 0.4,
+        height = 0.3,
+        prompt_position = "top"
+      }
+    })
   },
 })
 
-require("telescope").load_extension("file_browser")
-
+telescope.load_extension("file_browser")
+telescope.load_extension("ui-select")
