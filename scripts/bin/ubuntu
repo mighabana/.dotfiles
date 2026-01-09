@@ -34,7 +34,7 @@ while IFS= read -r pkg; do
     if ! is_package_installed "$pkg"; then
         MISSING_PACKAGES+=("$pkg")
     fi
-done < apt.pkg
+done < $HOME/.dotfiles/apt.pkg || log "Failed to install packages"
 
 # Check if there are missing packages
 if [ "${#MISSING_PACKAGES[@]}" -gt 0 ]; then
@@ -78,7 +78,7 @@ log "# --- installing nerd fonts..."
 
 FONT_DIR="${HOME}/.fonts"
 FONT_NAME="Mononoki Nerd"
-FONT_SRC_DIR="$PWD/fonts/${FONT_NAME}"
+FONT_SRC_DIR="${HOME}/.dotfiles/fonts/${FONT_NAME}"
 FONT_TARGET_DIR="${FONT_DIR}/${FONT_NAME}"
 
 # Ensure font directory exists
@@ -157,7 +157,6 @@ declare -A tools=(
     [gcloud]=503.0.0
     [nodejs]=v22.12.0
     [rust]=1.87.0
-    [postgres]=17.2
 )
 
 # Function to add and install asdf plugins/tools
@@ -219,61 +218,6 @@ else
     rm -f "$NEOVIM_TAR" || error "Failed to remove Neovim archive."
 
     log "Neovim installation completed successfully."
-fi
-
-# --- install Helix
-log "# --- installing helix..."
-
-# Check if Helix is already installed
-if [[ -d "$HOME/src/helix" ]]; then
-    log "Helix is already installed. Skipping installation."
-else
-    log "Installing Helix.."
-
-    # Create the source directory if it doesn't exist
-    if [[ ! -d "$HOME/src" ]]; then
-        log "Creating source directory: $HOME/src"
-        mkdir -p "$HOME/src" || error "Failed to create source directory."
-    fi
-
-    # Clone the Helix repository
-    log "Cloning Helix repository into $HOME/src/helix..."
-    git clone git@github.com:helix-editor/helix.git "$HOME/src/helix" || error "Failed to clone Helix repository."
-
-    # Install Helix using Cargo
-    log "Installing Helix using Cargo..."
-    cargo install --path "$HOME/src/helix/helix-term" --locked || error "Failed to install Helix."
-
-    log "Helix installation completed successfully."
-fi
-
-# --- install helix language servers
-log "# --- installing helix language servers..."
-
-### Ruff installation
-if command -v pip >/dev/null; then
-    if pip show ruff >/dev/null 2>&1; then
-        log "Ruff (ruff) is already installed. Skipping."
-    else
-        log "Installing Ruff (ruff)..."
-        pip install ruff || error "Failed to install Ruff."
-        log "Ruff installed successfully."
-    fi
-else
-    error "pip is not installed. Please install Python first."
-fi
-
-### TypeScript LSP installation
-if command -v npm >/dev/null; then
-    if npm list -g typescript-language-server >/dev/null 2>&1; then
-        log "TypeScript language server is already installed. Skipping."
-    else
-        log "Installing TypeScript language server..."
-        npm install -g typescript-language-server || error "Failed to install TypeScript language server."
-        log "TypeScript language server installed successfully."
-    fi
-else
-    error "NPM is not installed. Please install Node.js first."
 fi
 
 # --- install dev utils
@@ -401,38 +345,6 @@ else
 fi    
 
 log "Docker installation completed successfully."
-
-# --- install DBeaver
-
-log "# --- installing DBeaver"
-
-log "Checking for DBeaver installation..."
-
-# Check if DBeaver is already installed
-if dpkg -s dbeaver-ce &>/dev/null; then
-    log "DBeaver is already installed. Skipping installation."
-else
-    log "DBeaver is not installed. Proceeding with installation..."
-
-    # Check if the PPA repository is already added
-    log "Checking if the DBeaver PPA repository is already added..."
-    if grep -q "^deb .*serge-rider/dbeaver-ce" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-        log "DBeaver PPA repository is already configured. Skipping repository addition."
-    else
-        log "Adding the DBeaver PPA repository..."
-        sudo add-apt-repository -y ppa:serge-rider/dbeaver-ce || error "Failed to add DBeaver PPA repository."
-    fi
-
-    # Update package lists
-    log "Updating APT package index..."
-    sudo apt update || error "Failed to update APT package index."
-
-    # Install DBeaver
-    log "Installing DBeaver..."
-    sudo apt install -y dbeaver-ce || error "Failed to install DBeaver."
-
-    log "DBeaver installation completed successfully."
-fi
 
 # ----------------------------------- TERMINATION -----------------------------------
 
