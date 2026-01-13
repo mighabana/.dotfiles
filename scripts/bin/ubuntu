@@ -132,7 +132,7 @@ create_symlink() {
     if [[ -L "$dest" && "$(readlink "$dest")" == "$src" ]]; then
         log "Symlink already exists: $dest -> $src. Skipping."
     else
-        ln -sf "$src" "$dest" && log "Created symlink: $src -> $dest"
+    	mkdir -p "$(dirname "$dest")" && ln -sf "$src" "$dest" && log "Created symlink: $src -> $dest"
     fi
 }
 
@@ -143,7 +143,6 @@ create_symlink $HOME/.dotfiles/.bashrc $HOME/.bashrc
 create_symlink $HOME/.dotfiles/.zshrc $HOME/.zshrc
 create_symlink $HOME/.dotfiles/.gitconfig $HOME/.gitconfig
 create_symlink $HOME/.dotfiles/.p10k.zsh $HOME/.p10k.zsh
-create_symlink $HOME/.dotfiles/config/helix $HOME/.config/helix
 create_symlink $HOME/.dotfiles/config/nvim $HOME/.config/nvim
 
 # ----------------------------------- INSTALLATION -----------------------------------
