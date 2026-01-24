@@ -139,7 +139,6 @@ if [[ "$OS_TYPE" == "Linux" ]]; then
     [[ ":$PATH:" != *":$HOME/.fzf/bin"* ]] && export PATH="$HOME/.fzf/bin:$PATH"
 fi
 
-export HELIX_RUNTIME="$HOME/src/helix/runtime"
 
 # --- FZF
 
@@ -161,3 +160,4 @@ _fzf_compgen_path() {
 _fzf_compgen_dir() {
   fd --type=d --hidden --exclude .git . "$1"
 }
+export KUBECONFIG="${HOME}/.kube/config"

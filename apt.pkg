@@ -11,6 +11,7 @@ btop             # Command-line tool for resource monitoring (system stats)
 direnv           # Directory-based environment variable manager (automatically loads .envrc files)
 xclip            # Command-line clipboard utility (copy/paste via terminal)
 unzip            # Utility for extracting .zip archives
+ripgrep          # Line-oriented search tool (enables search by refex) 
 
 # --- dev dependencies
 
