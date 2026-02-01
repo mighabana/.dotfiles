@@ -132,6 +132,7 @@ python_venv
 [[ ":$PATH:" != *":/opt/homebrew/opt/curl/bin:"* ]] && export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 [[ ":$PATH:" != *":/usr/local/opt/tcl-tk/bin:"* ]] && export PATH="/usr/local/opt/tcl-tk/bin:$PATH"
 [[ ":$PATH:" != *":$HOME/.dotfiles/scripts/bin:"* ]] && export PATH="$HOME/.dotfiles/scripts/bin:$PATH"
+[[ ":$PATH:" != *":'$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
 
 if [[ "$OS_TYPE" == "Linux" ]]; then
     ARCH="$(uname -p)"
@@ -160,4 +161,6 @@ _fzf_compgen_path() {
 _fzf_compgen_dir() {
   fd --type=d --hidden --exclude .git . "$1"
 }
+
 export KUBECONFIG="${HOME}/.kube/config"
+alias claude="/Users/mhabana/.claude/local/claude"

@@ -104,7 +104,6 @@ configuration() {
     create_symlink $HOME/.dotfiles/.gitconfig $HOME/.gitconfig
     create_symlink $HOME/.dotfiles/.p10k.zsh $HOME/.p10k.zsh
 
-    create_symlink $HOME/.dotfiles/config/helix $HOME/.config/helix
     create_symlink $HOME/.dotfiles/config/nvim $HOME/.config/nvim
 }
 
@@ -115,8 +114,8 @@ install() {
     log "# --- installing asdf plugins and tools..."
 
     # Arrays for tools and versions
-    tools=("python" "terraform" "gcloud" "nodejs" "rust" "postgres")
-    versions=("3.12.8" "1.10.2" "503.0.0" "v22.12.0" "1.83.0" "17.2")
+    tools=("python" "terraform" "gcloud" "nodejs" "rust")
+    versions=("3.13.11" "1.10.2" "503.0.0" "v22.12.0" "1.91.0")
 
     # Function to add and install asdf plugins/tools
     install_tool() {
@@ -159,62 +158,6 @@ install() {
     done
 
     echo "[LOG]: All tools have been successfully installed and configured."
-
-
-    # --- install Helix
-    log "# --- installing helix..."
-
-    # Check if Helix is already installed
-    if [[ -d "$HOME/src/helix" ]]; then
-        log "Helix is already installed. Skipping installation."
-    else
-        log "Installing Helix.."
-
-        # Create the source directory if it doesn't exist
-        if [[ ! -d "$HOME/src" ]]; then
-            log "Creating source directory: $HOME/src"
-            mkdir -p "$HOME/src" || error "Failed to create source directory."
-        fi
-
-        # Clone the Helix repository
-        log "Cloning Helix repository into $HOME/src/helix..."
-        git clone git@github.com:helix-editor/helix.git "$HOME/src/helix" || error "Failed to clone Helix repository."
-
-        # Install Helix using Cargo
-        log "Installing Helix using Cargo..."
-        cargo install --path "$HOME/src/helix/helix-term" --locked || error "Failed to install Helix."
-
-        log "Helix installation completed successfully."
-    fi
-
-    # --- install helix language servers
-    log "# --- installing helix language servers..."
-
-    ### Ruff installation
-    if command -v pip >/dev/null; then
-        if pip show ruff >/dev/null 2>&1; then
-            log "Ruff (ruff) is already installed. Skipping."
-        else
-            log "Installing Ruff (ruff)..."
-            pip install ruff || error "Failed to install Ruff."
-            log "Ruff installed successfully."
-        fi
-    else
-        error "pip is not installed. Please install Python first."
-    fi
-
-    ### TypeScript LSP installation ---
-    if command -v npm >/dev/null; then
-        if npm list -g typescript-language-server >/dev/null 2>&1; then
-            log "TypeScript language server is already installed. Skipping."
-        else
-            log "Installing TypeScript language server..."
-            npm install -g typescript-language-server || error "Failed to install TypeScript language server."
-            log "TypeScript language server installed successfully."
-        fi
-    else
-        error "NPM is not installed. Please install Node.js first."
-    fi
 
 }
 

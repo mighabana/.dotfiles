@@ -37,7 +37,8 @@ return {
           "lua_ls",
           "jsonls",
           "terraformls",
-          "pyright"
+          "pyright",
+          "eslint"
         },
         automatic_installation = true,
       })

@@ -155,7 +155,7 @@ declare -A tools=(
     [terraform]=1.10.2
     [gcloud]=503.0.0
     [nodejs]=v22.12.0
-    [rust]=1.87.0
+    [rust]=1.93.0
 )
 
 # Function to add and install asdf plugins/tools
