@@ -1,13 +1,26 @@
 #!/bin/bash
 
 # from: https://gist.github.com/RichardBronosky/56d8f614fab2bacdd8b048fb58d0c0c7
-
 LINUX_copy(){
-    cat | xclip -selection clipboard
+    if [[ -n "$WAYLAND_DISPLAY" ]]; then
+        cat | wl-copy
+    elif [[ -n "$DISPLAY" ]]; then
+        cat | xclip -selection clipboard
+    else
+        echo "cb: no display found (DISPLAY and WAYLAND_DISPLAY are unset)" >&2
+        return 1
+    fi
 }
 
 LINUX_paste(){
-    xclip -selection clipboard -o
+    if [[ -n "$WAYLAND_DISPLAY" ]]; then
+        wl-paste --no-newline
+    elif [[ -n "$DISPLAY" ]]; then
+        xclip -selection clipboard -o
+    else
+        echo "cb: no display found (DISPLAY and WAYLAND_DISPLAY are unset)" >&2
+        return 1
+    fi
 }
 
 WSL_copy(){
@@ -33,6 +46,17 @@ MAC_copy(){
 
 MAC_paste(){
     pbpaste
+}
+
+SSH_copy() {
+    local data
+    data=$(cat | base64 | tr -d '\n')
+    printf "\033]52;c;%s\007" "$data"
+}
+
+SSH_paste() {
+    echo "cb: paste not supported over SSH (no OSC 52 read support)" >&2
+    return 1
 }
 
 stdin_is_a_pipe(){
@@ -80,7 +104,9 @@ prevent_prompt_from_being_on_the_same_line(){
 }
 
 detect_os(){
-    if [[ -f /proc/version ]] && grep -iq Microsoft /proc/version; then
+    if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
+        printf SSH
+    elif [[ -f /proc/version ]] && grep -iq Microsoft /proc/version; then
         printf WSL
     else
         case "$(uname -s)" in
