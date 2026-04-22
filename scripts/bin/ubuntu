@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e # Exit immediately if any command exitss with a non-zero status
+set -e # Exit immediately if any command exits with a non-zero status
 set -u # treat unset variables as an error
 set -o pipefail # return exit status of the last command in a pipeline that failed
 
@@ -52,7 +52,7 @@ if [[ -d "$HOME/.oh-my-zsh" ]]; then
     log "Oh-My-Zsh already installed, skipping."
 else
     log "Installing Oh-My-Zsh..."
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || error "Failed to install Oh-My-Zsh."
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || error "Failed to install Oh-My-Zsh."
 fi
 
 ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
@@ -116,13 +116,36 @@ log "Font installation complete."
 # --- install asdf
 log "# --- installing asdf..."
 
-if [[ ! -d "$HOME/.asdf" ]]; then
-    log "Installing asdf..."
-    git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.1 || error "Failed to install asdf."
+ASDF_VERSION="v0.18.1"
+ASDF_BIN="$HOME/.local/bin/asdf"
+
+if command -v asdf >/dev/null 2>&1 && asdf version | grep -q "${ASDF_VERSION#v}"; then
+    log "asdf ${ASDF_VERSION} already installed, skipping."
 else
-    log "asdf already installed, skipping."
+    log "Installing asdf ${ASDF_VERSION}..."
+
+    ASDF_ARCH="linux-amd64"
+    ASDF_TAR="asdf-${ASDF_VERSION}-${ASDF_ARCH}.tar.gz"
+    ASDF_URL="https://github.com/asdf-vm/asdf/releases/download/${ASDF_VERSION}/${ASDF_TAR}"
+    TMP_DIR="$(mktemp -d)"
+
+    curl -fsSL "$ASDF_URL" -o "${TMP_DIR}/${ASDF_TAR}" \
+        || error "Failed to download asdf ${ASDF_VERSION}."
+
+    tar -xzf "${TMP_DIR}/${ASDF_TAR}" -C "${TMP_DIR}" \
+        || error "Failed to extract asdf archive."
+
+    mkdir -p "$HOME/.local/bin"
+    mv "${TMP_DIR}/asdf" "$ASDF_BIN" \
+        || error "Failed to install asdf binary."
+
+    chmod +x "$ASDF_BIN"
+    rm -rf "$TMP_DIR"
+
+    log "asdf ${ASDF_VERSION} installed to ${ASDF_BIN}."
 fi
 
+export PATH="$HOME/.local/bin:${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
 # ----------------------------------- CONFIGS -----------------------------------
 
 create_symlink() {
@@ -164,11 +187,11 @@ install_tool() {
     local version=$2
 
     # Check if plugin exists
-    if asdf plugin-list | grep -q "^${tool}$"; then
+    if asdf plugin list | grep -q "^${tool}$"; then
         log "Plugin '${tool}' already exists. Skipping plugin addition."
     else
         log "Adding plugin '${tool}'..."
-        asdf plugin-add "$tool" || error "Failed to add plugin '${tool}'."
+        asdf plugin add "$tool" || error "Failed to add plugin '${tool}'."
     fi
 
     # Install tool version
@@ -181,7 +204,7 @@ install_tool() {
 
     # Set tool version globally
     log "Setting '${tool}' version '${version}' globally."
-    asdf global "$tool" "$version" || error "Failed to set '${tool}' version globally."
+    asdf set --home "$tool" "$version" || error "Failed to set '${tool}' version globally."
 }
 
 # Install all tools

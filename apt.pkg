@@ -14,12 +14,15 @@ unzip            # Utility for extracting .zip archives
 ripgrep          # Line-oriented search tool (enables search by refex) 
 
 # --- dev dependencies
-
 ### Python
-zlib1g-dev       # Development files for the zlib compression library (required for Python)
-libbz2-dev       # Development files for the bzip2 compression library (required for Python)
-libncurses-dev   # Terminal handling (ncurses) development files (required for Python)
-libffi-dev       # Development files for Foreign Function Interface (FFI) (required for Python)
-libreadline-dev  # Development files for GNU readline and history libraries (for Python's interactive shell)
-libssl-dev       # Development files for OpenSSL (required for Python)
-libsqlite3-dev   # SQLite3 development files (used by Python
+zlib1g-dev       # Compression library development files (required for Python)
+libbz2-dev       # bzip2 compression library development files (required for Python)
+libncursesw5-dev # Wide-character ncurses terminal handling development files (required for Python)
+libffi-dev       # Foreign Function Interface development files (required for Python)
+libreadline-dev  # GNU readline development files (required for Python's interactive shell)
+libssl-dev       # OpenSSL development files (required for Python)
+libsqlite3-dev   # SQLite3 development files (required for Python)
+liblzma-dev      # LZMA/XZ compression development files (required for Python's lzma module)
+libxml2-dev      # XML parsing library development files (required for Python's xml modules)
+libxmlsec1-dev   # XML security library development files (required for Python's xmlsec bindings)
+tk-dev           # Tk GUI toolkit development files (required for Python's tkinter module)

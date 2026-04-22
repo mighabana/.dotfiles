@@ -19,7 +19,6 @@ plugins=(git)
 [[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]] && plugins+=('zsh-autosuggestions')
 
 source $ZSH/oh-my-zsh.sh
-[[ -f $HOME/.asdf/asdf.sh ]] && . $HOME/.asdf/asdf.sh
 
 # User configuration
 
@@ -138,6 +137,8 @@ if [[ "$OS_TYPE" == "Linux" ]]; then
     ARCH="$(uname -p)"
     [[ ":$PATH:" != *":/opt/nvim-linux-${ARCH}/bin"* ]] && export PATH="/opt/nvim-linux-${ARCH}/bin:$PATH"
     [[ ":$PATH:" != *":$HOME/.fzf/bin"* ]] && export PATH="$HOME/.fzf/bin:$PATH"
+    [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
+    [[ ":$PATH:" != *":${ASDF_DATA_DIR:-$HOME/.asdf}/shims:"* ]] && export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
 fi
 
 
