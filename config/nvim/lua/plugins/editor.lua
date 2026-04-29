@@ -1,3 +1,5 @@
+local fold_state_saved = false
+
 return {
   { -- telescope (search tool)
     'nvim-telescope/telescope.nvim',
@@ -70,5 +72,54 @@ return {
     config = function()
       require("gitsigns").setup()
     end,
-  }
+  },
+  { -- code folding with LSP/treesitter
+    "kevinhwang91/nvim-ufo",
+    dependencies = { "kevinhwang91/promise-async" },
+    event = "BufReadPost",
+    opts = {
+      provider_selector = function(bufnr, filetype, buftype)
+        return { "lsp", "treesitter" }
+      end,
+    },
+    init = function()
+      -- These must be set before the plugin loads
+      vim.o.foldcolumn = "1"
+      vim.o.foldlevel = 99  -- start with all folds open
+      vim.o.foldlevelstart = 99
+      vim.o.foldenable = true
+    end,
+    keys = {
+      {
+        "zm", function()
+          if not fold_state_saved then
+            vim.cmd("silent! mkview 9")
+            vim.opt.foldlevel = 1
+            fold_state_saved = true
+          end
+        end, desc = "Fold to depth 1 (save state)"
+      },
+      {
+        "zr", function()
+          local cursor = vim.api.nvim_win_get_cursor(0)
+          vim.cmd("silent! loadview 9")
+          vim.api.nvim_win_set_cursor(0, cursor)
+          fold_state_saved = false
+        end, desc = "Restore fold state"
+      },
+      -- open/close everything
+      { "<leader>zo", function() require("ufo").openAllFolds() end,  desc = "Open all folds" },
+      { "<leader>zc", function() require("ufo").closeAllFolds() end, desc = "Close all folds" },
+      {
+        "K",
+        function()
+          local winid = require("ufo").peekFoldedLinesUnderCursor()
+          if not winid then
+            vim.lsp.buf.hover()
+          end
+        end,
+        desc = "Peek fold or hover",
+      },
+    },
+  },
 }

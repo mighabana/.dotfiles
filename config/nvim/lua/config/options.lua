@@ -1,8 +1,8 @@
 vim.opt.nu = true
 vim.opt.relativenumber = true
 
-vim.opt.tabstop = 4
-vim.opt.shiftwidth = 4
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
 vim.opt.expandtab = true
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "python",
@@ -39,3 +39,27 @@ vim.g.clipboard = {
     ['*'] = require('vim.ui.clipboard.osc52').paste('*'),
   },
 }
+
+
+-- # Folding
+-- save and load views on startup
+vim.api.nvim_create_autocmd("BufWinLeave", {
+  pattern = "*",
+  command = "silent! mkview",
+})
+
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  pattern = "*",
+  callback = function()
+    -- small defeer lets ufo initialise first
+    vim.defer_fn(function()
+      vim.cmd("silent! loadview")
+    end, 0)
+  end,
+})
+
+-- only save and load folds
+vim.opt.viewoptions = { "folds" }
+
+-- remove foldcolumn indicators
+vim.opt.foldcolumn = "0"
