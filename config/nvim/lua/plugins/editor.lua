@@ -79,7 +79,14 @@ return {
     event = "BufReadPost",
     opts = {
       provider_selector = function(bufnr, filetype, buftype)
-        return { "lsp", "treesitter" }
+        local ftMap = {
+          python = { "lsp", "treesitter" },
+          lua    = { "lsp", "treesitter" },
+          json   = { "treesitter", "indent" },
+          yaml   = { "indent" },
+          toml   = { "indent" },
+        }
+        return ftMap[filetype] or { "treesitter", "indent" }
       end,
     },
     init = function()
