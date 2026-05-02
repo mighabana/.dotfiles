@@ -129,4 +129,39 @@ return {
       },
     },
   },
+  { -- filesytem editing
+    'nvim-mini/mini.files',
+    version = '*',
+    keys = {
+      { "<leader>e", function() require("mini.files").open() end, desc = "Open file explorer" },
+      { "<leader>E", function() require("mini.files").open(vim.api.nvim_buf_get_name(0)) end, desc = "Open file explorer (current file)" },
+    },
+    opts = {
+      mappings = {
+        close         = "q",
+        go_in         = "l",
+        go_in_plus    = "L",
+        go_out        = "h",
+        go_out_plus   = "H",
+        mark_goto     = "'",
+        mark_set      = "m",
+        reset         = "<BS>",
+        reveal_cwd    = "@",
+        show_help     = "g?",
+        synchronize   = "=",
+        trim_left     = "<",
+        trim_right    = ">",
+      },
+      options = {
+        permanent_delete = false,
+        use_as_default_explorer = true,
+      },
+      windows = {
+        preview = true,
+        width_focus = 30,
+        width_nofocus = 15,
+        width_preview = 50,
+      },
+    },
+  },
 }
