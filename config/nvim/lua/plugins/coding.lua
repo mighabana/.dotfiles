@@ -50,10 +50,4 @@ return {
       { "<leader>u", "<cmd>UndotreeToggle<CR>", desc = "Toggle UndoTree" }
     }
   },
-  { -- interactive repl 
-    "Vigemus/iron.nvim",
-    config = function()
-      require("plugins.settings.iron")
-    end,
-  }
 }
