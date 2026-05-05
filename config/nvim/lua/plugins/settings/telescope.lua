@@ -159,7 +159,6 @@ telescope.setup({
       initial_mode = "normal",
       grouped = true,
       select_buffer = true,
-      hijack_netrw = true,
       mappings = {
         ["i"] = {
           ["<bs>"] = false,
