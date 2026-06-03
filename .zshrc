@@ -134,7 +134,7 @@ python_venv
 [[ ":$PATH:" != *":'$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
 
 if [[ "$OS_TYPE" == "Linux" ]]; then
-    ARCH="$(uname -p)"
+    ARCH="$(uname -m)"
     [[ ":$PATH:" != *":/opt/nvim-linux-${ARCH}/bin"* ]] && export PATH="/opt/nvim-linux-${ARCH}/bin:$PATH"
     [[ ":$PATH:" != *":$HOME/.fzf/bin"* ]] && export PATH="$HOME/.fzf/bin:$PATH"
     [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
@@ -164,4 +164,3 @@ _fzf_compgen_dir() {
 }
 
 export KUBECONFIG="${HOME}/.kube/config"
-alias claude="/Users/mhabana/.claude/local/claude"
