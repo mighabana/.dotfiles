@@ -258,7 +258,7 @@ cargo_package_installed() {
 }
 
 # List of development utilities to install via Cargo
-DEV_UTILS=("eza" "du-dust" "fd-find")
+DEV_UTILS=("eza" "du-dust" "fd-find" "git-delta")
 
 log "Installing development utilities via Cargo..."
 
@@ -275,6 +275,7 @@ for util in "${DEV_UTILS[@]}"; do
     fi
 done
 
+asdf reshim rust || warn "Failed to reshim rust."
 log "Development utilities setup complete."
 
 # --- install fzf
