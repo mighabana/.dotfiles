@@ -42,11 +42,11 @@ alias ip='ip --color=auto'
 ### LS & TREE
 TREE_IGNORE=".cache .git logs node_modules"
 
-alias ll='ls -lGah'
-alias la='ls -a'
-alias lt='ls --tree -L 1 -I "${TREE_IGNORE}"'
-alias lt2='ls --tree -L 2 -I "${TREE_IGNORE}"'
-alias lt3='ls --tree -L 3 -I "${TREE_IGNORE}"'
+alias ll='eza -lGah'
+alias la='eza -a'
+alias lt='eza --tree -L 1 -I "${TREE_IGNORE}"'
+alias lt2='eza --tree -L 2 -I "${TREE_IGNORE}"'
+alias lt3='eza --tree -L 3 -I "${TREE_IGNORE}"'
 
 # TOP
 
