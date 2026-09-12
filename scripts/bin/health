@@ -1,0 +1,673 @@
+#!/usr/bin/env python3
+
+# health v1.1 — live paginated TUI dashboard
+# Dependencies: blessed, psutil
+# Install: pip install blessed psutil
+#
+# Navigation: 1-7 to switch pages, +/- to adjust refresh, q to quit
+
+import time
+import subprocess
+import shutil
+import sys
+
+try:
+    import psutil
+    from blessed import Terminal
+except ImportError:
+    print("Missing dependencies. Run: pip install blessed psutil")
+    sys.exit(1)
+
+# ─────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────
+
+HOSTNAME        = "neuromancer"
+REFRESH_DEFAULT = 3  # seconds
+VERSION         = "v1.1"
+
+PAGES = [
+    ("1", "Overview"),
+    ("2", "Docker"),
+    ("3", "Kubernetes"),
+    ("4", "Processes"),
+    ("5", "Network"),
+    ("6", "Storage"),
+    ("7", "Services"),
+]
+
+# ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
+
+def run(cmd, timeout=5):
+    """Run a shell command, return (stdout, stderr, returncode)."""
+    try:
+        r = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=timeout
+        )
+        return r.stdout.strip(), r.stderr.strip(), r.returncode
+    except subprocess.TimeoutExpired:
+        return "", "timeout", 1
+    except Exception as e:
+        return "", str(e), 1
+
+def has_cmd(cmd):
+    return shutil.which(cmd) is not None
+
+def bar(value, total, width=20, fill="█", empty="░"):
+    """Render a proportional fill bar. Returns (bar_str, fraction)."""
+    pct = min(value / total, 1.0) if total else 0
+    filled = int(pct * width)
+    return fill * filled + empty * (width - filled), pct
+
+def pct_color(t, pct):
+    """Terminal colour escape based on percentage (0–1)."""
+    if pct >= 0.85:
+        return t.red
+    if pct >= 0.60:
+        return t.yellow
+    return t.green
+
+def clamp(s, width):
+    """Pad or truncate string to exact width."""
+    s = str(s)
+    if len(s) > width:
+        return s[: width - 1] + "…"
+    return s.ljust(width)
+
+def bytes_human(n):
+    for unit in ("B", "K", "M", "G", "T"):
+        if n < 1024:
+            return f"{n:.1f}{unit}"
+        n /= 1024
+    return f"{n:.1f}P"
+
+# ─────────────────────────────────────────────
+# DATA COLLECTORS
+# ─────────────────────────────────────────────
+
+def collect_overview():
+    cpu_pct   = psutil.cpu_percent(interval=None)
+    cpu_freq  = psutil.cpu_freq()
+    cpu_count = psutil.cpu_count(logical=False)
+    cpu_logi  = psutil.cpu_count(logical=True)
+    mem       = psutil.virtual_memory()
+    swap      = psutil.swap_memory()
+    load      = psutil.getloadavg()
+    boot      = psutil.boot_time()
+    uptime_s  = time.time() - boot
+    uptime_h  = int(uptime_s // 3600)
+    uptime_m  = int((uptime_s % 3600) // 60)
+
+    temps = {}
+    try:
+        for name, entries in psutil.sensors_temperatures().items():
+            for e in entries:
+                if e.current:
+                    temps[f"{name}/{e.label or 'core'}"] = e.current
+    except Exception:
+        pass
+
+    return {
+        "cpu_pct":   cpu_pct,
+        "cpu_freq":  cpu_freq,
+        "cpu_count": cpu_count,
+        "cpu_logi":  cpu_logi,
+        "mem":       mem,
+        "swap":      swap,
+        "load":      load,
+        "uptime":    f"{uptime_h}h {uptime_m}m",
+        "temps":     temps,
+    }
+
+def collect_processes():
+    procs = []
+    for p in psutil.process_iter(
+        ["pid", "name", "username", "cpu_percent", "memory_percent",
+         "status", "num_threads", "cmdline"]
+    ):
+        try:
+            procs.append(p.info)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    procs.sort(key=lambda x: x.get("cpu_percent") or 0, reverse=True)
+    return procs[:40]
+
+def collect_network():
+    ifaces = psutil.net_if_addrs()
+    stats  = psutil.net_if_stats()
+    io     = psutil.net_io_counters(pernic=True)
+    try:
+        conns = psutil.net_connections(kind="inet")
+    except (psutil.AccessDenied, PermissionError):
+        conns = []
+    listening = sorted(
+        [c for c in conns if c.status == "LISTEN"],
+        key=lambda c: c.laddr.port if c.laddr else 0,
+    )
+    return {"ifaces": ifaces, "stats": stats, "io": io, "listening": listening}
+
+def collect_storage():
+    parts = []
+    for p in psutil.disk_partitions(all=False):
+        try:
+            usage = psutil.disk_usage(p.mountpoint)
+            parts.append({
+                "device": p.device,
+                "mount":  p.mountpoint,
+                "fstype": p.fstype,
+                "usage":  usage,
+            })
+        except PermissionError:
+            pass
+    io  = psutil.disk_io_counters(perdisk=True)
+    out, _, _ = run("lsblk -o NAME,SIZE,TYPE,ROTA,TRAN -d -n 2>/dev/null")
+    return {"partitions": parts, "io": io, "lsblk": out}
+
+def collect_docker():
+    if not has_cmd("docker"):
+        return None
+    out, err, rc = run(
+        "docker ps -a --format '{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}'"
+    )
+    containers = []
+    if rc == 0:
+        for line in out.splitlines():
+            parts = line.split("|")
+            if len(parts) == 5:
+                containers.append({
+                    "id":     parts[0][:12],
+                    "name":   parts[1],
+                    "image":  parts[2],
+                    "status": parts[3],
+                    "ports":  parts[4],
+                })
+    df_out, _, _ = run(
+        "docker system df --format '{{.Type}}|{{.Size}}|{{.Reclaimable}}'"
+    )
+    return {"containers": containers, "df": df_out, "error": err if rc != 0 else None}
+
+def collect_k8s():
+    if not has_cmd("kubectl"):
+        return None
+    nodes_out, nodes_err, nodes_rc = run("kubectl get nodes --no-headers 2>&1")
+    pods_out,  pods_err,  pods_rc  = run("kubectl get pods -A --no-headers 2>&1")
+    svc_out,   svc_err,   svc_rc   = run("kubectl get svc -A --no-headers 2>&1")
+    return {
+        "nodes":     nodes_out if nodes_rc == 0 else None,
+        "nodes_err": nodes_err,
+        "pods":      pods_out  if pods_rc  == 0 else None,
+        "pods_err":  pods_err,
+        "svcs":      svc_out   if svc_rc   == 0 else None,
+        "svcs_err":  svc_err,
+    }
+
+def collect_services():
+    if not has_cmd("systemctl"):
+        return None
+    failed_out, _, _ = run("systemctl --failed --no-pager --no-legend")
+    watched = [
+        "clickhouse-server", "airflow", "docker",
+        "k3s", "containerd", "minio", "nginx", "ssh",
+    ]
+    statuses = {}
+    for svc in watched:
+        out, _, _ = run(f"systemctl is-active {svc} 2>/dev/null")
+        statuses[svc] = out.strip() if out.strip() else "inactive"
+    return {"failed": failed_out, "watched": statuses}
+
+# ─────────────────────────────────────────────
+# PAGE RENDERERS  (each returns list[str])
+# ─────────────────────────────────────────────
+
+def render_overview(t, w, h):
+    d     = collect_overview()
+    N     = t.normal
+    lines = []
+
+    # ── CPU
+    cpu_b, cpu_p = bar(d["cpu_pct"], 100, width=30)
+    cc = pct_color(t, cpu_p)
+    freq_str = f"  {d['cpu_freq'].current/1000:.2f} GHz" if d["cpu_freq"] else ""
+    lines.append(t.bold + t.cyan + "  CPU  " + N + f"{d['cpu_count']}C/{d['cpu_logi']}T{freq_str}")
+    lines.append(f"  {cc}{cpu_b}{N}  {cc}{d['cpu_pct']:5.1f}%{N}")
+
+    # per-core mini-bars (up to 16)
+    per_core = psutil.cpu_percent(percpu=True)
+    core_row = "  "
+    for c in per_core[:16]:
+        cb, cp = bar(c, 100, width=5, fill="▮", empty="▯")
+        core_row += f"{pct_color(t, cp)}{cb}{N} "
+    lines.append(core_row)
+    lines.append("")
+
+    # ── Memory
+    mem = d["mem"]
+    mb, mp = bar(mem.used, mem.total, width=30)
+    mc = pct_color(t, mp)
+    lines.append(
+        t.bold + t.cyan + "  MEM  " + N
+        + f"{bytes_human(mem.used)} / {bytes_human(mem.total)}  ({mem.percent:.1f}%)"
+    )
+    lines.append(f"  {mc}{mb}{N}  {mc}{mem.percent:5.1f}%{N}")
+
+    swap = d["swap"]
+    if swap.total > 0:
+        sb, sp = bar(swap.used, swap.total, width=30)
+        sc = pct_color(t, sp)
+        lines.append(
+            t.bold + t.cyan + "  SWAP " + N
+            + f"{bytes_human(swap.used)} / {bytes_human(swap.total)}"
+        )
+        lines.append(f"  {sc}{sb}{N}  {sc}{swap.percent:5.1f}%{N}")
+    lines.append("")
+
+    # ── Load + uptime
+    l1, l5, l15 = d["load"]
+    lines.append(
+        t.bold + t.cyan + "  LOAD " + N
+        + f"1m {t.yellow}{l1:.2f}{N}  5m {t.yellow}{l5:.2f}{N}  15m {t.yellow}{l15:.2f}{N}"
+        + f"    uptime {t.bold}{d['uptime']}{N}"
+    )
+    lines.append("")
+
+    # ── Temps
+    if d["temps"]:
+        lines.append(t.bold + t.cyan + "  TEMP " + N)
+        row = "  "
+        for name, val in list(d["temps"].items())[:8]:
+            tc = t.red if val >= 80 else (t.yellow if val >= 65 else t.green)
+            row += f"{name.split('/')[-1]}: {tc}{val:.0f}°C{N}   "
+        lines.append(row)
+
+    return lines
+
+
+def render_docker(t, w, h):
+    data  = collect_docker()
+    N     = t.normal
+    lines = []
+
+    if data is None:
+        lines.append(t.yellow + "  docker not found on this host." + N)
+        return lines
+    if data["error"]:
+        lines.append(t.red + f"  Error: {data['error']}" + N)
+        return lines
+
+    col_w = [12, 24, 30, 22, max(w - 92, 5)]
+    lines.append(
+        "  "
+        + t.bold + clamp("ID",     col_w[0]) + N + "  "
+        + t.bold + clamp("NAME",   col_w[1]) + N + "  "
+        + t.bold + clamp("IMAGE",  col_w[2]) + N + "  "
+        + t.bold + clamp("STATUS", col_w[3]) + N + "  "
+        + t.bold + clamp("PORTS",  col_w[4]) + N
+    )
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+
+    for c in data["containers"]:
+        status = c["status"]
+        sc = t.green if status.lower().startswith("up") else t.red
+        lines.append(
+            "  "
+            + clamp(c["id"],    col_w[0]) + "  "
+            + clamp(c["name"],  col_w[1]) + "  "
+            + clamp(c["image"], col_w[2]) + "  "
+            + sc + clamp(status, col_w[3]) + N + "  "
+            + clamp(c["ports"], col_w[4])
+        )
+
+    if not data["containers"]:
+        lines.append(t.dim + "  No containers found." + N)
+
+    lines.append("")
+    lines.append(t.bold + t.cyan + "  DISK USAGE" + N)
+    lines.append("  " + t.dim + "─" * 50 + N)
+    col_dw = [20, 14, 16]
+    lines.append(
+        "  "
+        + t.bold + clamp("TYPE",        col_dw[0]) + N
+        + t.bold + clamp("SIZE",        col_dw[1]) + N
+        + t.bold + clamp("RECLAIMABLE", col_dw[2]) + N
+    )
+    for row in data["df"].splitlines():
+        parts = row.split("|")
+        if len(parts) == 3:
+            lines.append(
+                "  "
+                + clamp(parts[0], col_dw[0])
+                + clamp(parts[1], col_dw[1])
+                + clamp(parts[2], col_dw[2])
+            )
+
+    return lines
+
+
+def render_kubernetes(t, w, h):
+    data  = collect_k8s()
+    N     = t.normal
+    lines = []
+
+    if data is None:
+        lines.append(t.yellow + "  kubectl not found on this host." + N)
+        return lines
+
+    for title, content, err in [
+        ("NODES",    data["nodes"],  data["nodes_err"]),
+        ("PODS",     data["pods"],   data["pods_err"]),
+        ("SERVICES", data["svcs"],   data["svcs_err"]),
+    ]:
+        lines.append(t.bold + t.cyan + f"  {title}" + N)
+        lines.append("  " + t.dim + "─" * (w - 4) + N)
+        if content:
+            for row in content.splitlines():
+                lines.append("  " + row[: w - 4])
+        else:
+            lines.append(t.red + f"  {err[: w - 4]}" + N)
+        lines.append("")
+
+    return lines
+
+
+def render_processes(t, w, h):
+    procs = collect_processes()
+    N     = t.normal
+    lines = []
+
+    col_w = [7, 10, 20, 8, 8, 12, max(w - 70, 5)]
+    lines.append(
+        "  "
+        + t.bold + clamp("PID",    col_w[0]) + N
+        + t.bold + clamp("USER",   col_w[1]) + N
+        + t.bold + clamp("NAME",   col_w[2]) + N
+        + t.bold + clamp("CPU%",   col_w[3]) + N
+        + t.bold + clamp("MEM%",   col_w[4]) + N
+        + t.bold + clamp("STATUS", col_w[5]) + N
+        + t.bold + clamp("CMD",    col_w[6]) + N
+    )
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+
+    for p in procs[: h - 8]:
+        cpu = p.get("cpu_percent") or 0
+        mem = p.get("memory_percent") or 0
+        cc  = t.red if cpu > 50 else (t.yellow if cpu > 20 else "")
+        mc  = t.red if mem > 20 else (t.yellow if mem > 10 else "")
+        cmd = " ".join(p.get("cmdline") or []) or p.get("name", "")
+        lines.append(
+            "  "
+            + clamp(p.get("pid", ""),      col_w[0])
+            + clamp(p.get("username", ""), col_w[1])
+            + clamp(p.get("name", ""),     col_w[2])
+            + cc + clamp(f"{cpu:.1f}",     col_w[3]) + N
+            + mc + clamp(f"{mem:.1f}",     col_w[4]) + N
+            + clamp(p.get("status", ""),   col_w[5])
+            + clamp(cmd,                   col_w[6])
+        )
+
+    return lines
+
+
+def render_network(t, w, h):
+    data  = collect_network()
+    N     = t.normal
+    lines = []
+
+    lines.append(t.bold + t.cyan + "  INTERFACES" + N)
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+
+    for iface, addrs in data["ifaces"].items():
+        st  = data["stats"].get(iface)
+        nio = data["io"].get(iface)
+        up  = (t.green + "UP  " + N) if (st and st.isup) else (t.red + "DOWN" + N)
+        ipv4  = next((a.address for a in addrs if a.family.name == "AF_INET"), "—")
+        speed = f"{st.speed}Mbps" if st and st.speed else "—"
+        rx    = bytes_human(nio.bytes_recv) if nio else "—"
+        tx    = bytes_human(nio.bytes_sent) if nio else "—"
+        lines.append(
+            f"  {up} "
+            + t.bold + clamp(iface, 14) + N
+            + f"  {clamp(ipv4, 18)}  spd {clamp(speed, 10)}"
+            + f"  rx {t.cyan}{rx}{N}  tx {t.cyan}{tx}{N}"
+        )
+    lines.append("")
+
+    lines.append(t.bold + t.cyan + "  LISTENING PORTS" + N)
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+    col_w = [8, 22, 10, max(w - 44, 5)]
+    lines.append(
+        "  "
+        + t.bold + clamp("PORT",  col_w[0]) + N
+        + t.bold + clamp("ADDR",  col_w[1]) + N
+        + t.bold + clamp("PROTO", col_w[2]) + N
+        + t.bold + clamp("PID",   col_w[3]) + N
+    )
+
+    seen = set()
+    for c in data["listening"][: h - 16]:
+        port = c.laddr.port if c.laddr else "?"
+        addr = c.laddr.ip   if c.laddr else "?"
+        key  = (port, addr)
+        if key in seen:
+            continue
+        seen.add(key)
+        proto = "TCP6" if "::" in str(addr) else "TCP"
+        pid   = str(c.pid) if c.pid else "—"
+        lines.append(
+            "  "
+            + clamp(port,  col_w[0])
+            + clamp(addr,  col_w[1])
+            + clamp(proto, col_w[2])
+            + clamp(pid,   col_w[3])
+        )
+
+    return lines
+
+
+def render_storage(t, w, h):
+    data  = collect_storage()
+    N     = t.normal
+    lines = []
+
+    lines.append(t.bold + t.cyan + "  FILESYSTEMS" + N)
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+    col_w = [20, 10, 10, 10, 10, 8]
+    lines.append(
+        "  "
+        + t.bold + clamp("DEVICE", col_w[0]) + N
+        + t.bold + clamp("FSTYPE", col_w[1]) + N
+        + t.bold + clamp("TOTAL",  col_w[2]) + N
+        + t.bold + clamp("USED",   col_w[3]) + N
+        + t.bold + clamp("FREE",   col_w[4]) + N
+        + t.bold + clamp("USE%",   col_w[5]) + N
+        + t.bold + "MOUNT" + N
+    )
+    for p in data["partitions"]:
+        u      = p["usage"]
+        _, pct = bar(u.used, u.total, width=16)
+        bc     = pct_color(t, pct)
+        lines.append(
+            "  "
+            + clamp(p["device"],              col_w[0])
+            + clamp(p["fstype"],              col_w[1])
+            + clamp(bytes_human(u.total),     col_w[2])
+            + clamp(bytes_human(u.used),      col_w[3])
+            + clamp(bytes_human(u.free),      col_w[4])
+            + bc + clamp(f"{u.percent:.0f}%", col_w[5]) + N
+            + p["mount"]
+        )
+    lines.append("")
+
+    if data["lsblk"]:
+        lines.append(t.bold + t.cyan + "  BLOCK DEVICES" + N)
+        lines.append("  " + t.dim + "─" * (w - 4) + N)
+        for row in data["lsblk"].splitlines():
+            lines.append("  " + row[: w - 4])
+        lines.append("")
+
+    if data["io"]:
+        lines.append(t.bold + t.cyan + "  DISK I/O" + N)
+        lines.append("  " + t.dim + "─" * (w - 4) + N)
+        col_io = [16, 16, 16, 16]
+        lines.append(
+            "  "
+            + t.bold + clamp("DISK",  col_io[0]) + N
+            + t.bold + clamp("READ",  col_io[1]) + N
+            + t.bold + clamp("WRITE", col_io[2]) + N
+            + t.bold + clamp("BUSY",  col_io[3]) + N
+        )
+        for disk, counters in data["io"].items():
+            busy = getattr(counters, "busy_time", 0)
+            lines.append(
+                "  "
+                + clamp(disk,                               col_io[0])
+                + clamp(bytes_human(counters.read_bytes),   col_io[1])
+                + clamp(bytes_human(counters.write_bytes),  col_io[2])
+                + clamp(f"{busy/1000:.1f}s" if busy else "—", col_io[3])
+            )
+
+    return lines
+
+
+def render_services(t, w, h):
+    data  = collect_services()
+    N     = t.normal
+    lines = []
+
+    if data is None:
+        lines.append(t.yellow + "  systemctl not available on this host." + N)
+        return lines
+
+    lines.append(t.bold + t.cyan + "  WATCHED SERVICES" + N)
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+    col_w = [26, 14]
+    lines.append(
+        "  "
+        + t.bold + clamp("SERVICE", col_w[0]) + N
+        + t.bold + "STATUS" + N
+    )
+    for svc, status in data["watched"].items():
+        if status == "active":
+            sc = t.green
+        elif status in ("inactive", "unknown"):
+            sc = t.dim
+        else:
+            sc = t.red
+        lines.append("  " + clamp(svc, col_w[0]) + sc + status + N)
+
+    lines.append("")
+    lines.append(t.bold + t.cyan + "  FAILED UNITS" + N)
+    lines.append("  " + t.dim + "─" * (w - 4) + N)
+    if data["failed"].strip():
+        for row in data["failed"].splitlines():
+            lines.append(t.red + "  " + row[: w - 4] + N)
+    else:
+        lines.append(t.green + "  ✓  No failed units." + N)
+
+    return lines
+
+
+# ─────────────────────────────────────────────
+# CHROME: header + footer
+# ─────────────────────────────────────────────
+
+def draw_header(t, w, page_idx, refresh):
+    N   = t.normal
+    now = time.strftime("%Y-%m-%d  %H:%M:%S")
+
+    title = f" {HOSTNAME}  {VERSION} "
+    right = f" {now}  ↻ {refresh}s "
+
+    tabs = ""
+    for i, (key, name) in enumerate(PAGES):
+        label = f" {key}:{name} "
+        if i == page_idx:
+            tabs += t.bold + t.black_on_cyan + label + N + " "
+        else:
+            tabs += t.dim + label + N + " "
+
+    gap = w - len(title) - len(right)
+    print(t.bold + t.black_on_cyan + title + N + " " * max(gap, 0) + t.bold + right + N)
+    print(tabs)
+    print(t.cyan + "─" * w + N)
+
+
+def draw_footer(t, w):
+    N    = t.normal
+    hint = " 1-7 page  q quit  +/- refresh "
+    pad  = w - len(hint)
+    print(t.black_on_cyan + hint + N + " " * max(pad, 0))
+
+
+# ─────────────────────────────────────────────
+# MAIN LOOP
+# ─────────────────────────────────────────────
+
+PAGE_RENDERERS = [
+    render_overview,
+    render_docker,
+    render_kubernetes,
+    render_processes,
+    render_network,
+    render_storage,
+    render_services,
+]
+
+
+def draw(t, page_idx, refresh):
+    w = t.width  or 120
+    h = t.height or 40
+
+    with t.hidden_cursor(), t.location(0, 0):
+        print(t.clear, end="")
+        draw_header(t, w, page_idx, refresh)
+
+        content_h = h - 4  # 3 header lines + 1 footer
+        lines = PAGE_RENDERERS[page_idx](t, w, content_h)
+
+        for line in lines[:content_h]:
+            print(line)
+
+        rendered = min(len(lines), content_h)
+        for _ in range(content_h - rendered):
+            print()
+
+        draw_footer(t, w)
+
+
+def main():
+    t       = Terminal()
+    page    = 0
+    refresh = REFRESH_DEFAULT
+
+    # Warm up cpu_percent (first call always returns 0.0)
+    psutil.cpu_percent(interval=0.1)
+
+    with t.fullscreen(), t.cbreak(), t.hidden_cursor():
+        last_draw = 0.0
+
+        while True:
+            now = time.time()
+            if now - last_draw >= refresh:
+                draw(t, page, refresh)
+                last_draw = now
+
+            key = t.inkey(timeout=0.25)
+            if not key:
+                continue
+
+            k = str(key)
+            if k.lower() == "q":
+                break
+            elif k == "+":
+                refresh = max(1, refresh - 1)
+            elif k == "-":
+                refresh = min(60, refresh + 1)
+            elif k in [str(i + 1) for i in range(len(PAGES))]:
+                page      = int(k) - 1
+                last_draw = 0.0
+
+
+if __name__ == "__main__":
+    main()
